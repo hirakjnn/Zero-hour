@@ -48,15 +48,19 @@ fi
 # PM2
 sudo npm install -g pm2
 
-# 3. BUILD VITE FRONTEND
+# 3. SET BASE PATH
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+echo "📂 Repository root detected at: $REPO_ROOT"
+
+# 4. BUILD VITE FRONTEND
 echo "🏗️ Building React Frontend..."
-cd /home/ubuntu/vscode-web-ide/frontend
+cd "$REPO_ROOT/frontend"
 npm install
 npm run build
 
-# 4. PREPARE BACKEND & DOCKER IMAGE
+# 5. PREPARE BACKEND & DOCKER IMAGE
 echo "⚙️ Setting up Backend Server..."
-cd /home/ubuntu/vscode-web-ide/backend
+cd "$REPO_ROOT/backend"
 npm install
 
 echo "🐳 Building lightweight Alpine Workspace Docker image..."
@@ -93,49 +97,49 @@ EOF
 
 sudo docker build -t vscode-workspace -f Dockerfile.workspace .
 
-# 5. CONFIGURE NGINX
+# 6. CONFIGURE NGINX
 echo "🌐 Configuring Nginx Reverse Proxy with WebSocket & Dynamic Port Routing..."
 
-cat << 'EOF' > /tmp/nginx.conf
+cat << EOF > /tmp/nginx.conf
 server {
     listen 80;
     server_name _; # Default catch-all for IP address
 
     # Frontend Static Build
-    root /home/ubuntu/vscode-web-ide/frontend/dist;
+    root $REPO_ROOT/frontend/dist;
     index index.html;
 
     # Backend API Proxy
     location /api/ {
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
+        proxy_set_header Host \$host;
     }
 
     # WebSocket Terminal (Critical Fix)
     location /terminal {
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
+        proxy_set_header Host \$host;
     }
 
     # Dynamic Live Preview Proxy Router
-    # (The backend `http-proxy-middleware` handles the actual port resolution)
+    # (The backend \`http-proxy-middleware\` handles the actual port resolution)
     location /preview/ {
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
+        proxy_set_header Host \$host;
     }
 
     # SPA routing fallback
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 }
 EOF
@@ -145,21 +149,21 @@ sudo ln -sf /etc/nginx/sites-available/vscode-ide /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo systemctl restart nginx
 
-# 6. START PM2
+# 7. START PM2
 echo "▶️ Launching Backend via PM2..."
-cat << 'EOF' > ecosystem.config.js
+cat << EOF > ecosystem.config.js
 module.exports = {
   apps: [{
     name: "vscode-web-ide-backend",
     script: "./server.js",
-    cwd: "/home/ubuntu/vscode-web-ide/backend",
+    cwd: "$REPO_ROOT/backend",
     instances: 1,
     exec_mode: "fork",
     env: {
       NODE_ENV: "production",
       PORT: 5000,
       ALLOWED_ORIGINS: "*", // Allow raw IP access
-      WORKSPACE_DIR: "/home/ubuntu/vscode-web-ide/workspaces" // Root dir for Docker mounts
+      WORKSPACE_DIR: "$REPO_ROOT/workspaces" // Root dir for Docker mounts
     }
   }]
 }
