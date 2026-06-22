@@ -118,8 +118,11 @@ class SessionManager {
             "workbench.startupEditor": "none",
             "workbench.panel.opensMaximized": "always",
             "workbench.activityBar.visible": false,
+            "workbench.editor.empty.hint": "hidden",
+            "workbench.tips.enabled": false,
             "chat.disableAIFeatures": true,
             "chat.editor.enable": false,
+            "chat.commandCenter.enabled": false,
             "github.copilot.enable": false
         };
         fs.writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2));
