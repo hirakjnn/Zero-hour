@@ -167,7 +167,8 @@ class SessionManager {
       // Run lightweight container and COMPLETELY DISABLE the extensions marketplace
       // to prevent candidates from installing GitHub Copilot or cheating tools.
       // -p external_port:8080 -> Maps EC2 port to code-server's 8080
-      const cmd = `docker run -d --name ${containerName} -e EXTENSIONS_GALLERY='{"serviceUrl":""}' -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry`;
+      // We append /home/coder/workspace at the end so it explicitly opens that folder to trigger our .vscode settings!
+      const cmd = `docker run -d --name ${containerName} -e EXTENSIONS_GALLERY='{"serviceUrl":""}' -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry /home/coder/workspace`;
 
       await execPromise(cmd);
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
