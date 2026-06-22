@@ -10,6 +10,7 @@ const filesRouter = require('./routes/files');
 const executeRouter = require('./routes/execute');
 const aiRouter = require('./routes/ai');
 const sessionRouter = require('./routes/session');
+const submitRouter = require('./routes/submit');
 const sessionManager = require('./services/SessionManager');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
@@ -73,6 +74,7 @@ app.use('/api/session', sessionRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/execute', executeRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/submit', submitRouter);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -144,3 +146,24 @@ server.listen(PORT, () => {
     console.log(`✅ VS Code Web IDE Backend running on port ${PORT}`);
     console.log(`   Workspace: ${process.env.WORKSPACE_DIR || path.join(__dirname, 'workspace')}`);
 });
+
+// Scale-to-Zero heartbeat
+let zeroSessionsTime = 0;
+setInterval(() => {
+    const activeSessionsCount = sessionManager.sessions.size;
+    if (activeSessionsCount === 0) {
+        zeroSessionsTime += 1;
+        console.log(`[Scale-to-Zero] 0 active sessions for ${zeroSessionsTime} minute(s).`);
+        if (zeroSessionsTime >= 15) {
+            console.log('[Scale-to-Zero] 15 minutes of inactivity reached. Shutting down...');
+            const { exec } = require('child_process');
+            exec('sudo shutdown -h now', (err, stdout, stderr) => {
+                if (err) {
+                    console.error('[Scale-to-Zero] Failed to execute shutdown:', err);
+                }
+            });
+        }
+    } else {
+        zeroSessionsTime = 0;
+    }
+}, 60 * 1000);

@@ -1,7 +1,7 @@
-# Graph Report - C:\Users\Dell\ANTIGRAVITY_CODE\AWS  (2026-04-19)
+# Graph Report - C:\Users\Dell\ANTIGRAVITY_CODE\AWS  (2026-06-22)
 
 ## Corpus Check
-- 26 files · ~18,588 words
+- 26 files · ~24,270 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

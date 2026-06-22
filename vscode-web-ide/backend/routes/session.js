@@ -19,9 +19,9 @@ router.use((req, res, next) => {
 // Assigns a session ID and spins up container (falls back to local disk if Docker unavailable)
 router.post('/init', async (req, res) => {
     try {
-        const { sessionId } = req.body;
+        const { sessionId, challengeId } = req.body;
         // Create or reattach to session
-        const session = await sessionManager.createSession(sessionId);
+        const session = await sessionManager.createSession(sessionId, challengeId);
         res.json({ success: true, session });
     } catch (e) {
         console.warn('Session Docker init failed — falling back to local-disk session:', e.message);
