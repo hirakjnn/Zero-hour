@@ -117,6 +117,7 @@ class SessionManager {
             "security.workspace.trust.startupPrompt": "never",
             "workbench.startupEditor": "none",
             "workbench.panel.opensMaximized": "always",
+            "workbench.activityBar.visible": false,
             "chat.editor.enable": false,
             "github.copilot.enable": false
         };
