@@ -61,7 +61,6 @@ app.use('/preview/:sessionId', (req, res, next) => {
         target: `http://127.0.0.1:${session.port}`,
         changeOrigin: true,
         ws: true,
-        pathRewrite: { [`^/preview/${req.params.sessionId}`]: '' },
         logLevel: 'error'
     });
 
@@ -82,18 +81,15 @@ app.get('/health', (req, res) => {
 
 // WebSocket Upgrade Handler for Code-Server
 server.on('upgrade', (req, socket, head) => {
-    // Parse the sessionId from the URL (e.g., /preview/12345/...)
     const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
     if (match) {
         const sessionId = match[1];
         const session = sessionManager.getSession(sessionId);
         if (session) {
-            // Dynamically proxy the WebSocket connection to the correct container
             const wsProxy = createProxyMiddleware({
                 target: `http://127.0.0.1:${session.port}`,
                 changeOrigin: true,
                 ws: true,
-                pathRewrite: { [`^/preview/${sessionId}`]: '' },
                 logLevel: 'silent'
             });
             return wsProxy.upgrade(req, socket, head);
