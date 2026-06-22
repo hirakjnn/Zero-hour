@@ -129,14 +129,14 @@ class SessionManager {
       // Stop/remove if a container with this name somehow exists
       await execPromise(`docker rm -f ${containerName}`).catch(() => { });
 
-      // Run lightweight Alpine container
-      // -p external_port:3000 -> Maps EC2 32001 to container's 3000
+      // Run lightweight container
+      // -p external_port:8080 -> Maps EC2 port to code-server's 8080
       const cmd = `docker run -d --name ${containerName} \\
-                -v "${userWorkspaceDir}":/home/developer/workspace \\
-                -p ${port}:3000 \\
-                --user developer \\
+                -v "${userWorkspaceDir}":/home/coder/workspace \\
+                -p ${port}:8080 \\
+                --user coder \\
                 --memory="1024m" \\
-                code-server`;
+                code-server-image`;
 
       await execPromise(cmd);
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);

@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
         // Run docker exec to grab .opencode/sessions log file
         let sessionLogs = '';
         try {
-            const { stdout } = await execPromise(`docker exec ${containerName} cat /home/developer/workspace/.opencode/sessions`);
+            const { stdout } = await execPromise(`docker exec ${containerName} cat /home/coder/workspace/.opencode/sessions`);
             sessionLogs = stdout;
         } catch (err) {
             console.error('Failed to get session logs:', err);
