@@ -120,6 +120,8 @@ class SessionManager {
             "workbench.activityBar.visible": false,
             "workbench.editor.empty.hint": "hidden",
             "workbench.tips.enabled": false,
+            "workbench.layoutControl.enabled": false,
+            "workbench.parts.auxiliarybar.hidden": true,
             "chat.disableAIFeatures": true,
             "chat.editor.enable": false,
             "chat.commandCenter.enabled": false,
