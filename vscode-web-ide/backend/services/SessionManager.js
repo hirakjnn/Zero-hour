@@ -101,6 +101,28 @@ class SessionManager {
     const baseWorkspaceDir = process.env.WORKSPACE_DIR || path.join(__dirname, '../../workspaces');
     const userWorkspaceDir = path.join(baseWorkspaceDir, sessionId);
 
+    // Create a central config dir for global settings and empty extensions masking
+    const globalConfigDir = path.join(__dirname, '../../global_config');
+    const emptyExtensionsDir = path.join(globalConfigDir, 'empty_extensions');
+    const globalSettingsPath = path.join(globalConfigDir, 'settings.json');
+
+    if (!fs.existsSync(globalConfigDir)) {
+        fs.mkdirSync(globalConfigDir, { recursive: true });
+        fs.mkdirSync(emptyExtensionsDir, { recursive: true });
+        
+        // This setting natively auto-allows tasks and disables the trust model safely!
+        const globalSettings = {
+            "task.allowAutomaticTasks": "on",
+            "security.workspace.trust.enabled": false,
+            "security.workspace.trust.startupPrompt": "never",
+            "workbench.startupEditor": "none",
+            "workbench.panel.opensMaximized": "always",
+            "chat.editor.enable": false,
+            "github.copilot.enable": false
+        };
+        fs.writeFileSync(globalSettingsPath, JSON.stringify(globalSettings, null, 2));
+    }
+
     if (!fs.existsSync(userWorkspaceDir)) {
       fs.mkdirSync(userWorkspaceDir, { recursive: true });
 
@@ -113,19 +135,15 @@ class SessionManager {
         }
       }
 
-      // Inject VS Code settings to disable welcome screen and auto-start OpenCode CLI
+      // Inject VS Code settings for the specific workspace
       const vscodeDir = path.join(userWorkspaceDir, '.vscode');
       if (!fs.existsSync(vscodeDir)) {
           fs.mkdirSync(vscodeDir, { recursive: true });
       }
       
       const settingsJson = {
-          "workbench.startupEditor": "none",
-          "task.allowAutomaticTasks": "on",
           "terminal.integrated.enableMultiLinePasteWarning": false,
-          "workbench.panel.opensMaximized": "always",
-          "chat.editor.enable": false,
-          "github.copilot.enable": false
+          "workbench.panel.opensMaximized": "always"
       };
       fs.writeFileSync(path.join(vscodeDir, 'settings.json'), JSON.stringify(settingsJson, null, 2));
 
@@ -166,26 +184,11 @@ class SessionManager {
       // Stop/remove if a container with this name somehow exists
       await execPromise(`docker rm -f ${containerName}`).catch(() => { });
 
-      // Use -w to set the working directory so it automatically reads our .vscode settings!
-      // -e EXTENSIONS_GALLERY="{}" safely kills the extensions marketplace without crashing bash.
-      // Appending /home/coder/workspace tells Code-Server to treat this as the active root workspace!
-      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry /home/coder/workspace`;
+      // We volume mount the global settings file to OVERRIDE the container's User settings permanently.
+      // We volume mount the empty extensions directory to MASK any pre-installed extensions in the image and block new ones.
+      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -v "${globalSettingsPath}":/home/coder/.local/share/code-server/User/settings.json -v "${emptyExtensionsDir}":/home/coder/.local/share/code-server/extensions:ro -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry /home/coder/workspace`;
 
       await execPromise(cmd);
-      
-      // Forcefully delete any synced or cached extensions (like Copilot) from the container!
-      // Also inject global User settings to auto-approve tasks so the prompt never appears.
-      try {
-          await execPromise(`docker exec ${containerName} rm -rf /home/coder/.local/share/code-server/extensions`);
-          
-          const globalSettings = {
-              "task.allowAutomaticTasks": "on"
-          };
-          await execPromise(`docker exec ${containerName} mkdir -p /home/coder/.local/share/code-server/User`);
-          await execPromise(`docker exec ${containerName} sh -c 'echo '"'"'${JSON.stringify(globalSettings)}'"'"' > /home/coder/.local/share/code-server/User/settings.json'`);
-      } catch (e) {
-          console.error(`[SessionManager] Failed post-boot setup for ${containerName}:`, e);
-      }
 
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
 
