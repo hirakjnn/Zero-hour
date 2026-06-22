@@ -23,6 +23,7 @@ RUN find /usr/lib/code-server -type d -iname "*copilot*" -exec rm -rf {} + || tr
 RUN mkdir -p /home/coder/.local/share/code-server/User \
     && mkdir -p /home/coder/.local/share/code-server/extensions \
     && mkdir -p /home/coder/.local/share/opencode \
+    && echo '{"workbench.startupEditor":"none","workbench.activityBar.visible":false,"workbench.panel.opensMaximized":"always","task.allowAutomaticTasks":"on","security.workspace.trust.enabled":false,"security.workspace.trust.startupPrompt":"never","workbench.editor.empty.hint":"hidden","workbench.tips.enabled":false,"workbench.layoutControl.enabled":false,"workbench.parts.auxiliarybar.hidden":true,"chat.disableAIFeatures":true,"chat.editor.enable":false,"chat.commandCenter.enabled":false,"github.copilot.enable":false}' > /home/coder/.local/share/code-server/User/settings.json \
     && chown -R coder:coder /home/coder/.local
 
 # Drop back to regular user for execution
