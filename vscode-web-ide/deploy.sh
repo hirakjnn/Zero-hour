@@ -1,34 +1,20 @@
 #!/bin/bash
 
-# VS Code Web IDE - Ubuntu EC2 Deployment Script
-# Optimized for t3.small instances (2GB RAM).
-# Automatically configures Swap, Nginx, Docker, & Node.js
+# Zero Hour - Phase 2 EC2 Deployment Script
+# Automatically configures Docker, Node.js, and PM2 for the AI-Native Assessment Engine
 
 echo "========================================================"
-echo "🚀 Starting Deployment of Sandboxed VS Code Web IDE"
+echo "🚀 Starting Deployment of Zero Hour Engine (Phase 2)"
 echo "========================================================"
 
-# 1. ADD SWAP MEMORY (Critical for t3.small/2GB RAM)
-echo "📦 Checking Swap space..."
-if free | awk '/^Swap:/ {exit !$2}'; then
-    echo "Swap already exists."
-else
-    echo "Adding 2GB Swap file for Docker container headroom..."
-    sudo fallocate -l 2G /swapfile
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-    echo "Swap space added."
-fi
-
-# 2. INSTALL SYSTEM DEPENDENCIES
-echo "🛠️ Installing dependencies (Nginx, Docker, Node.js)..."
+# 1. INSTALL SYSTEM DEPENDENCIES
+echo "🛠️ Installing dependencies (Docker, Node.js)..."
 sudo apt update && sudo apt upgrade -y
 
 # Docker
 if ! command -v docker &> /dev/null; then
-    sudo apt install -y docker.io docker-compose-v2
+    echo "Installing Docker..."
+    sudo apt install -y docker.io
     sudo usermod -aG docker ubuntu
     sudo systemctl enable docker
     sudo systemctl start docker
@@ -36,144 +22,41 @@ fi
 
 # Node.js 20 LTS
 if ! command -v node &> /dev/null; then
+    echo "Installing Node.js..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt install -y nodejs
 fi
 
-# Nginx
-if ! command -v nginx &> /dev/null; then
-    sudo apt install -y nginx
+# PM2
+if ! command -v pm2 &> /dev/null; then
+    echo "Installing PM2..."
+    sudo npm install -g pm2
 fi
 
-# PM2
-sudo npm install -g pm2
-
-# 3. SET BASE PATH
+# 2. SET BASE PATH
 REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "📂 Repository root detected at: $REPO_ROOT"
 
-# 4. BUILD VITE FRONTEND
-echo "🏗️ Building React Frontend..."
-cd "$REPO_ROOT/frontend"
-npm install
-npm run build
-
-# 5. PREPARE BACKEND & DOCKER IMAGE
-echo "⚙️ Setting up Backend Server..."
+# 3. BUILD THE CODE-SERVER DOCKER IMAGE
+echo "🐳 Building the new code-server Docker image..."
 cd "$REPO_ROOT/backend"
+sudo docker build -t code-server-image .
+
+# 4. PREPARE BACKEND & START PM2
+echo "⚙️ Setting up Backend Server..."
 npm install
 
-echo "🐳 Building lightweight Alpine Workspace Docker image..."
-# Create the Dockerfile dynamically to ensure it's always there
-cat << 'EOF' > Dockerfile.workspace
-FROM alpine:3.19
-
-# Install Node.js, Python, Git, and build tools
-RUN apk add --no-cache \
-    nodejs \
-    npm \
-    python3 \
-    py3-pip \
-    git \
-    bash \
-    curl \
-    build-base
-
-# Create a non-root developer user
-RUN adduser -D -s /bin/bash developer
-
-# Setup workspace directory
-WORKDIR /home/developer/workspace
-RUN chown -R developer:developer /home/developer/workspace
-
-# Switch to the developer user
-USER developer
-
-# Expose standard app port
-EXPOSE 3000
-
-CMD ["tail", "-f", "/dev/null"]
-EOF
-
-sudo docker build -t vscode-workspace -f Dockerfile.workspace .
-
-# 6. CONFIGURE NGINX
-echo "🌐 Configuring Nginx Reverse Proxy with WebSocket & Dynamic Port Routing..."
-
-cat << EOF > /tmp/nginx.conf
-server {
-    listen 80;
-    server_name _; # Default catch-all for IP address
-
-    # Frontend Static Build
-    root $REPO_ROOT/frontend/dist;
-    index index.html;
-
-    # Backend API Proxy
-    location /api/ {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-    }
-
-    # WebSocket Terminal (Critical Fix)
-    location /terminal {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-    }
-
-    # Dynamic Live Preview Proxy Router
-    # (The backend \`http-proxy-middleware\` handles the actual port resolution)
-    location /preview/ {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-    }
-
-    # SPA routing fallback
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-}
-EOF
-
-sudo mv /tmp/nginx.conf /etc/nginx/sites-available/vscode-ide
-sudo ln -sf /etc/nginx/sites-available/vscode-ide /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo systemctl restart nginx
-
-# 7. START PM2
 echo "▶️ Launching Backend via PM2..."
-cat << EOF > ecosystem.config.js
-module.exports = {
-  apps: [{
-    name: "vscode-web-ide-backend",
-    script: "./server.js",
-    cwd: "$REPO_ROOT/backend",
-    instances: 1,
-    exec_mode: "fork",
-    env: {
-      NODE_ENV: "production",
-      PORT: 5000,
-      ALLOWED_ORIGINS: "*", // Allow raw IP access
-      WORKSPACE_DIR: "$REPO_ROOT/workspaces" // Root dir for Docker mounts
-    }
-  }]
-}
-EOF
+# Kill any existing processes
+pm2 delete zerohour-backend 2>/dev/null || true
 
+# Start using the ecosystem config we created earlier
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup | tail -n 1 | sudo bash
 
 echo "========================================================"
-echo "✅ Deployment Scripts Built successfully!"
-echo "Your IDE will be available at your EC2 Public IP address on port 80."
+echo "✅ Deployment built successfully!"
+echo "Your Zero Hour backend is now running on Port 5000."
+echo "Connect your Vercel frontend to this EC2 instance's IP."
 echo "========================================================"
