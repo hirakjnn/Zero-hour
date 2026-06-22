@@ -119,7 +119,7 @@ export default function App() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showTerminal, setShowTerminal] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
-  const [showAI, setShowAI] = useState(true);
+  const [showAI, setShowAI] = useState(false);
 
   // Resizable panel widths
   const [sidebarWidth, setSidebarWidth] = useState(260);
@@ -698,13 +698,6 @@ export default function App() {
             className={`titlebar-toggle preview ${showPreview ? 'active' : ''}`}>
             <Smartphone size={13} />
             <span>Preview</span>
-          </button>
-          <button
-            onClick={() => setShowAI(p => !p)}
-            title="Toggle AI Assistant"
-            className={`titlebar-toggle ai ${showAI ? 'active' : ''}`}>
-            <Sparkles size={13} />
-            <span>AI</span>
           </button>
         </div>
       </div>
