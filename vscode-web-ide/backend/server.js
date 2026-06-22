@@ -62,17 +62,13 @@ const previewProxy = createProxyMiddleware({
         }
         return 'http://127.0.0.1:32000'; // Fallback to dead port if invalid
     },
-    pathRewrite: (path, req) => {
-        // Strip the dynamic /preview/sessionId prefix so code-server sees the root path
-        return path.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
-    },
     changeOrigin: true,
     ws: true,
     xfwd: true, // Crucial for code-server to understand proxy protocol/host
     logLevel: 'error'
 });
 
-// HTTP middleware to catch invalid sessions gracefully
+// HTTP middleware to catch invalid sessions gracefully and enforce trailing slashes
 app.use((req, res, next) => {
     if (req.url.startsWith('/preview/')) {
         const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
@@ -83,6 +79,16 @@ app.use((req, res, next) => {
             
             // Touch session to keep it alive
             sessionManager.touchSession(sessionId);
+
+            // ENFORCE TRAILING SLASH (CRITICAL FOR CODE-SERVER SUBPATH ROUTING)
+            // If the URL is exactly /preview/123, code-server returns "Not found."
+            // It strictly requires /preview/123/
+            try {
+                const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+                if (urlObj.pathname === `/preview/${sessionId}`) {
+                    return res.redirect(`/preview/${sessionId}/${urlObj.search}`);
+                }
+            } catch(e) {}
         }
     }
     next();
