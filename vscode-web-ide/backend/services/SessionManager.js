@@ -174,10 +174,17 @@ class SessionManager {
       await execPromise(cmd);
       
       // Forcefully delete any synced or cached extensions (like Copilot) from the container!
+      // Also inject global User settings to auto-approve tasks so the prompt never appears.
       try {
           await execPromise(`docker exec ${containerName} rm -rf /home/coder/.local/share/code-server/extensions`);
+          
+          const globalSettings = {
+              "task.allowAutomaticTasks": "on"
+          };
+          await execPromise(`docker exec ${containerName} mkdir -p /home/coder/.local/share/code-server/User`);
+          await execPromise(`docker exec ${containerName} sh -c 'echo '"'"'${JSON.stringify(globalSettings)}'"'"' > /home/coder/.local/share/code-server/User/settings.json'`);
       } catch (e) {
-          // ignore if directory doesn't exist
+          console.error(`[SessionManager] Failed post-boot setup for ${containerName}:`, e);
       }
 
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
