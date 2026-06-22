@@ -164,13 +164,18 @@ class SessionManager {
       // Stop/remove if a container with this name somehow exists
       await execPromise(`docker rm -f ${containerName}`).catch(() => { });
 
-      // Run lightweight container and COMPLETELY DISABLE the extensions marketplace
-      // to prevent candidates from installing GitHub Copilot or cheating tools.
-      // -p external_port:8080 -> Maps EC2 port to code-server's 8080
-      // We append /home/coder/workspace at the end so it explicitly opens that folder to trigger our .vscode settings!
-      const cmd = `docker run -d --name ${containerName} -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry --disable-extensions /home/coder/workspace`;
+      // Use -w to set the working directory so it automatically reads our .vscode settings!
+      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry`;
 
       await execPromise(cmd);
+      
+      // Forcefully delete any synced or cached extensions (like Copilot) from the container!
+      try {
+          await execPromise(`docker exec ${containerName} rm -rf /home/coder/.local/share/code-server/extensions`);
+      } catch (e) {
+          // ignore if directory doesn't exist
+      }
+
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
 
       return { isNew: true, ...sessionData };
