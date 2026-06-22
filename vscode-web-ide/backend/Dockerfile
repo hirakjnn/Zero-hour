@@ -22,6 +22,7 @@ RUN find /usr/lib/code-server -type d -iname "*copilot*" -exec rm -rf {} + || tr
 # Pre-create the directory structure so Docker doesn't create them as root during volume mounts!
 RUN mkdir -p /home/coder/.local/share/code-server/User \
     && mkdir -p /home/coder/.local/share/code-server/extensions \
+    && mkdir -p /home/coder/.local/share/opencode \
     && chown -R coder:coder /home/coder/.local
 
 # Drop back to regular user for execution
