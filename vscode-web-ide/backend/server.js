@@ -69,9 +69,18 @@ const previewProxy = createProxyMiddleware({
 });
 
 // HTTP middleware to catch invalid sessions gracefully
-app.use('/preview/:sessionId', (req, res, next) => {
-    const session = sessionManager.getSession(req.params.sessionId);
-    if (!session) return res.status(404).send('Session expired or not found.');
+app.use((req, res, next) => {
+    if (req.url.startsWith('/preview/')) {
+        const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+        if (match) {
+            const sessionId = match[1];
+            const session = sessionManager.getSession(sessionId);
+            if (!session) return res.status(404).send('Session expired or not found.');
+            
+            // Touch session to keep it alive
+            sessionManager.touchSession(sessionId);
+        }
+    }
     next();
 });
 
