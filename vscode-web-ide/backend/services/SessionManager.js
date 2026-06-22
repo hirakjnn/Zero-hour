@@ -133,7 +133,7 @@ class SessionManager {
               {
                   "label": "OpenCode AI Assistant",
                   "type": "shell",
-                  "command": "opencode",
+                  "command": "source ~/.bashrc && opencode",
                   "presentation": {
                       "reveal": "always",
                       "panel": "new",
@@ -165,7 +165,8 @@ class SessionManager {
       await execPromise(`docker rm -f ${containerName}`).catch(() => { });
 
       // Use -w to set the working directory so it automatically reads our .vscode settings!
-      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry`;
+      // -e EXTENSIONS_GALLERY="{}" safely kills the extensions marketplace without crashing bash.
+      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry`;
 
       await execPromise(cmd);
       

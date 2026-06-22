@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Drop back to regular user BEFORE installing OpenCode so it is placed in the coder user's home directory
+USER coder
+
 # Install OpenCode CLI
 RUN curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash
-
-# Drop back to regular user
-USER coder
