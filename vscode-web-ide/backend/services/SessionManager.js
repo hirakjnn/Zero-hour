@@ -131,7 +131,7 @@ class SessionManager {
 
       // Run lightweight container
       // -p external_port:8080 -> Maps EC2 port to code-server's 8080
-      const cmd = `docker run -d --name ${containerName} -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none`;
+      const cmd = `docker run -d --name ${containerName} -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none`;
 
       await execPromise(cmd);
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
