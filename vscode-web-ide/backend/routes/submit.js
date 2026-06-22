@@ -4,6 +4,12 @@ const sessionManager = require('../services/SessionManager');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const { Pool } = require('pg');
+
+const pool = process.env.DATABASE_URL ? new Pool({ 
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Required for AWS RDS
+}) : null;
 
 router.post('/', async (req, res) => {
     try {
@@ -52,6 +58,23 @@ router.post('/', async (req, res) => {
                 logsRead: sessionLogs.length > 0
             }
         };
+
+        // Save to AWS RDS Database if configured
+        if (pool) {
+            try {
+                // We store the session ID, and the JSON scorecard
+                await pool.query(
+                    `INSERT INTO evaluations (session_id, score, scorecard, created_at)
+                     VALUES ($1, $2, $3, NOW())`,
+                    [sessionId, mockScorecard.score, JSON.stringify(mockScorecard)]
+                );
+                console.log('[DB Sync] Saved scorecard to AWS RDS Database.');
+            } catch (dbErr) {
+                console.error('[DB Sync] Failed to save to database. Note: ensure the evaluations table exists!', dbErr);
+            }
+        } else {
+            console.warn('[DB Sync] DATABASE_URL not set. Skipping Database Sync.');
+        }
 
         res.json({ success: true, scorecard: mockScorecard });
     } catch (e) {
