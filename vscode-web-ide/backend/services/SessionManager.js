@@ -118,6 +118,7 @@ class SessionManager {
             "workbench.startupEditor": "none",
             "workbench.panel.opensMaximized": "always",
             "workbench.activityBar.visible": false,
+            "chat.disableAIFeatures": true,
             "chat.editor.enable": false,
             "github.copilot.enable": false
         };
