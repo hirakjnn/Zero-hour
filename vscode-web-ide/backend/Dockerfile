@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
 # Install OpenCode CLI globally using npm (this ensures the agent component is correctly bundled)
 RUN npm install -g opencode-ai
 
+# Violently purge any pre-installed GitHub Copilot extensions from the base image binaries
+RUN find /usr/lib/code-server -type d -iname "*copilot*" -exec rm -rf {} + || true
+
 # Pre-create the directory structure so Docker doesn't create them as root during volume mounts!
 RUN mkdir -p /home/coder/.local/share/code-server/User \
     && mkdir -p /home/coder/.local/share/code-server/extensions \
