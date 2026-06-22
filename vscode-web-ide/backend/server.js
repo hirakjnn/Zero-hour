@@ -62,6 +62,10 @@ const previewProxy = createProxyMiddleware({
         }
         return 'http://127.0.0.1:32000'; // Fallback to dead port if invalid
     },
+    pathRewrite: (path, req) => {
+        // Strip the dynamic /preview/sessionId prefix so code-server sees the root path
+        return path.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
+    },
     changeOrigin: true,
     ws: true,
     xfwd: true, // Crucial for code-server to understand proxy protocol/host
