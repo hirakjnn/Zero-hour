@@ -13,6 +13,21 @@ const sessionRouter = require('./routes/session');
 const submitRouter = require('./routes/submit');
 const sessionManager = require('./services/SessionManager');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const httpProxy = require('http-proxy');
+
+// Create a raw standalone proxy strictly for WebSockets
+const rawWsProxy = httpProxy.createProxyServer({
+    ws: true,
+    changeOrigin: true,
+    xfwd: true
+});
+
+rawWsProxy.on('error', (err, req, socket) => {
+    console.error('[WS Proxy Error]', err.message);
+    if (socket && !socket.destroyed) {
+        socket.destroy();
+    }
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -67,17 +82,9 @@ const previewProxy = createProxyMiddleware({
         return path.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
     },
     changeOrigin: true,
-    ws: true,
     xfwd: true, // Crucial for code-server to understand proxy protocol/host
-    onProxyReqWs: (proxyReq, req, socket, options, head) => {
-        // Fix WebSocket Origin mismatch (prevents 1006 errors)
-        try {
-            const port = options.target.port || new URL(options.target).port;
-            proxyReq.setHeader('Origin', `http://127.0.0.1:${port}`);
-        } catch(e) {}
-    },
     onError: (err, req, res) => {
-        console.error('[Proxy Error]', err.message);
+        console.error('[HTTP Proxy Error]', err.message);
     },
     logLevel: 'error'
 });
@@ -130,12 +137,27 @@ app.get('/health', (req, res) => {
 
 // WebSocket Upgrade Handler for Code-Server
 server.on('upgrade', (req, socket, head) => {
-    if (req.url.startsWith('/preview')) {
-        // Forward WebSocket to the global proxy instance
-        previewProxy.upgrade(req, socket, head);
-    } else {
-        socket.destroy();
+    const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+    if (match) {
+        const sessionId = match[1];
+        const session = sessionManager.getSession(sessionId);
+        if (session) {
+            // Touch session to keep it alive
+            sessionManager.touchSession(sessionId);
+
+            // Strip the /preview/123/ prefix so code-server gets the WebSocket at its root
+            req.url = req.url.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
+            
+            // Bypass http-proxy-middleware entirely and proxy the socket manually
+            // This guarantees the dynamic port is respected and the dead-port bug is bypassed
+            rawWsProxy.ws(req, socket, head, {
+                target: `http://127.0.0.1:${session.port}`
+            });
+            return;
+        }
     }
+    // Drop invalid or missing sessions
+    socket.destroy();
 });
 
 const PORT = process.env.PORT || 5000;
