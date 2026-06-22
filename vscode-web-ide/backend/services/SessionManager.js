@@ -153,7 +153,7 @@ class SessionManager {
               {
                   "label": "OpenCode AI Assistant",
                   "type": "shell",
-                  "command": "source ~/.bashrc && opencode",
+                  "command": "bash -i -c 'opencode'",
                   "presentation": {
                       "reveal": "always",
                       "panel": "new",
@@ -186,7 +186,8 @@ class SessionManager {
 
       // We volume mount the global settings file to OVERRIDE the container's User settings permanently.
       // We volume mount the empty extensions directory to MASK any pre-installed extensions in the image and block new ones.
-      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -v "${globalSettingsPath}":/home/coder/.local/share/code-server/User/settings.json -v "${emptyExtensionsDir}":/home/coder/.local/share/code-server/extensions:ro -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry /home/coder/workspace`;
+      // --disable-extensions permanently kills any built-in extensions (like Copilot Chat) that bypass the volume mask.
+      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -v "${globalSettingsPath}":/home/coder/.local/share/code-server/User/settings.json -v "${emptyExtensionsDir}":/home/coder/.local/share/code-server/extensions:ro -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry --disable-extensions /home/coder/workspace`;
 
       await execPromise(cmd);
 
