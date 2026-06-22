@@ -129,9 +129,10 @@ class SessionManager {
       // Stop/remove if a container with this name somehow exists
       await execPromise(`docker rm -f ${containerName}`).catch(() => { });
 
-      // Run lightweight container
+      // Run lightweight container and COMPLETELY DISABLE the extensions marketplace
+      // to prevent candidates from installing GitHub Copilot or cheating tools.
       // -p external_port:8080 -> Maps EC2 port to code-server's 8080
-      const cmd = `docker run -d --name ${containerName} -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none`;
+      const cmd = `docker run -d --name ${containerName} -e EXTENSIONS_GALLERY='{"serviceUrl":""}' -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry`;
 
       await execPromise(cmd);
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
