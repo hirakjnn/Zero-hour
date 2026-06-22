@@ -121,7 +121,6 @@ class SessionManager {
       
       const settingsJson = {
           "workbench.startupEditor": "none",
-          "security.workspace.trust.enabled": false,
           "task.allowAutomaticTasks": "on",
           "terminal.integrated.enableMultiLinePasteWarning": false,
           "workbench.panel.opensMaximized": "always",
@@ -170,7 +169,9 @@ class SessionManager {
       // Use -w to set the working directory so it automatically reads our .vscode settings!
       // -e EXTENSIONS_GALLERY="{}" safely kills the extensions marketplace without crashing bash.
       // Appending /home/coder/workspace tells Code-Server to treat this as the active root workspace!
-      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry /home/coder/workspace`;
+      // --disable-workspace-trust allows tasks.json to auto-run without the trust popup!
+      // --disable-extensions permanently kills all Chat tools and Copilot.
+      const cmd = `docker run -d --name ${containerName} -w /home/coder/workspace -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/workspace -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry --disable-workspace-trust --disable-extensions /home/coder/workspace`;
 
       await execPromise(cmd);
       
