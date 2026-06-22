@@ -50,22 +50,33 @@ app.use((req, res, next) => {
     next();
 });
 
-// Dynamic App Preview Proxy Server
-// Automatically routes /preview/session-abc/ to the mapped port
+// Global persistent proxy instance for both HTTP and WebSockets
+const previewProxy = createProxyMiddleware({
+    target: 'http://127.0.0.1:32000', // Default dummy target
+    router: (req) => {
+        // Extract sessionId from URL (works for both HTTP and WebSocket reqs)
+        const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+        if (match) {
+            const session = sessionManager.getSession(match[1]);
+            if (session) return `http://127.0.0.1:${session.port}`;
+        }
+        return 'http://127.0.0.1:32000'; // Fallback to dead port if invalid
+    },
+    changeOrigin: true,
+    ws: true,
+    xfwd: true, // Crucial for code-server to understand proxy protocol/host
+    logLevel: 'error'
+});
+
+// HTTP middleware to catch invalid sessions gracefully
 app.use('/preview/:sessionId', (req, res, next) => {
     const session = sessionManager.getSession(req.params.sessionId);
     if (!session) return res.status(404).send('Session expired or not found.');
-
-    // Create or reuse proxy
-    const proxy = createProxyMiddleware({
-        target: `http://127.0.0.1:${session.port}`,
-        changeOrigin: true,
-        ws: true,
-        logLevel: 'error'
-    });
-
-    return proxy(req, res, next);
+    next();
 });
+
+// Apply proxy for HTTP traffic
+app.use('/preview', previewProxy);
 
 // API routes
 app.use('/api/session', sessionRouter);
@@ -81,22 +92,12 @@ app.get('/health', (req, res) => {
 
 // WebSocket Upgrade Handler for Code-Server
 server.on('upgrade', (req, socket, head) => {
-    const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
-    if (match) {
-        const sessionId = match[1];
-        const session = sessionManager.getSession(sessionId);
-        if (session) {
-            const wsProxy = createProxyMiddleware({
-                target: `http://127.0.0.1:${session.port}`,
-                changeOrigin: true,
-                ws: true,
-                logLevel: 'silent'
-            });
-            return wsProxy.upgrade(req, socket, head);
-        }
+    if (req.url.startsWith('/preview')) {
+        // Forward WebSocket to the global proxy instance
+        previewProxy.upgrade(req, socket, head);
+    } else {
+        socket.destroy();
     }
-    // If no valid session, destroy the socket to prevent hanging
-    socket.destroy();
 });
 
 const PORT = process.env.PORT || 5000;
