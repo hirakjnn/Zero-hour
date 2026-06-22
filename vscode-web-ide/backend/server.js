@@ -75,8 +75,13 @@ app.use('/preview/:sessionId', (req, res, next) => {
     next();
 });
 
-// Apply proxy for HTTP traffic
-app.use('/preview', previewProxy);
+// Apply proxy for HTTP traffic (Using raw app.use to prevent Express from stripping the /preview prefix)
+app.use((req, res, next) => {
+    if (req.url.startsWith('/preview')) {
+        return previewProxy(req, res, next);
+    }
+    next();
+});
 
 // API routes
 app.use('/api/session', sessionRouter);
