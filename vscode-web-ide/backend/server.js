@@ -15,11 +15,17 @@ const sessionManager = require('./services/SessionManager');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const httpProxy = require('http-proxy');
 
-// Create a raw standalone proxy strictly for WebSockets
 const rawWsProxy = httpProxy.createProxyServer({
     ws: true,
     changeOrigin: true,
     xfwd: true
+});
+
+rawWsProxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+    try {
+        const port = options.target.port || new URL(options.target).port;
+        proxyReq.setHeader('Origin', `http://127.0.0.1:${port}`);
+    } catch(e) {}
 });
 
 rawWsProxy.on('error', (err, req, socket) => {
@@ -78,7 +84,7 @@ const previewProxy = createProxyMiddleware({
         return 'http://127.0.0.1:32000'; // Fallback to dead port if invalid
     },
     pathRewrite: (path, req) => {
-        // Strip the dynamic prefix so code-server serves from its root
+        // MUST strip the path so code-server serves from / to prevent 'Not found.'
         return path.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
     },
     changeOrigin: true,
