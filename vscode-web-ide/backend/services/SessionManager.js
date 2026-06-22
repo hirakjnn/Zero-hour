@@ -193,7 +193,7 @@ class SessionManager {
 
       // We volume mount the global settings file to OVERRIDE the container's User settings permanently.
       // We volume mount the empty extensions directory to MASK ALL possible extension directories and block new ones.
-      const cmd = `docker run -d --name ${containerName} -w /home/coder/project -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/project -v "${emptyExtensionsDir}":/home/coder/.local/share/code-server/extensions:ro -v "${emptyExtensionsDir}":/home/coder/.vscode/extensions:ro -v "${emptyExtensionsDir}":/home/coder/.vscode-server/extensions:ro -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry --disable-extension github.copilot --disable-extension github.copilot-chat /home/coder/project`;
+      const cmd = `docker run -d --name ${containerName} -w /home/coder/project -e EXTENSIONS_GALLERY="{}" -e AUTH=none -v "${userWorkspaceDir}":/home/coder/project -v "${emptyExtensionsDir}":/home/coder/.local/share/code-server/extensions:ro -v "${emptyExtensionsDir}":/home/coder/.vscode/extensions:ro -v "${emptyExtensionsDir}":/home/coder/.vscode-server/extensions:ro -p ${port}:8080 --user coder --memory="1024m" code-server-image --auth none --disable-telemetry /home/coder/project`;
 
       await execPromise(cmd);
 
