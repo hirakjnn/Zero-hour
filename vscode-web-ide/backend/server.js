@@ -17,8 +17,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const server = http.createServer(app);
 
-// WebSocket server for terminal
-const wss = new WebSocket.Server({ server, path: '/terminal' });
+// Obsolete custom terminal removed
 
 // CORS - allow frontend origin (supports hosting via env vars)
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -81,64 +80,27 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// WebSocket terminal handler
-wss.on('connection', (ws, req) => {
-    // `req` is the HTTP upgrade request - parse sessionId from its URL
-    const url = new URL(req.url, `http://localhost`);
-    const sessionId = url.searchParams.get('sessionId');
-
-    const session = sessionManager.getSession(sessionId);
-    if (!session || !session.containerName) {
-        ws.send(JSON.stringify({ type: 'output', data: '\r\n❌ Session expired or invalid. Please refresh.\r\n' }));
-        return ws.close();
+// WebSocket Upgrade Handler for Code-Server
+server.on('upgrade', (req, socket, head) => {
+    // Parse the sessionId from the URL (e.g., /preview/12345/...)
+    const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+    if (match) {
+        const sessionId = match[1];
+        const session = sessionManager.getSession(sessionId);
+        if (session) {
+            // Dynamically proxy the WebSocket connection to the correct container
+            const wsProxy = createProxyMiddleware({
+                target: `http://127.0.0.1:${session.port}`,
+                changeOrigin: true,
+                ws: true,
+                pathRewrite: { [`^/preview/${sessionId}`]: '' },
+                logLevel: 'silent'
+            });
+            return wsProxy.upgrade(req, socket, head);
+        }
     }
-
-    sessionManager.touchSession(sessionId);
-
-    // DOCKER SANDBOX: Instead of raw powershell/bash, exec into the user's specific container!
-    const proc = spawn('docker', ['exec', '-i', session.containerName, 'bash'], {
-        env: { ...process.env, TERM: 'xterm-256color' }
-    });
-
-    proc.stdout.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'output', data: data.toString() }));
-        }
-    });
-
-    proc.stderr.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'output', data: data.toString() }));
-        }
-    });
-
-    proc.on('exit', (code) => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'exit', code }));
-        }
-    });
-
-    ws.on('message', (message) => {
-        try {
-            const msg = JSON.parse(message);
-            if (msg.type === 'input') {
-                proc.stdin.write(msg.data);
-            }
-        } catch (e) {
-            // raw input
-            proc.stdin.write(message);
-        }
-    });
-
-    ws.on('close', () => {
-        console.log('[Terminal] Client disconnected');
-        proc.kill();
-    });
-
-    ws.on('error', (err) => {
-        console.error('[Terminal] WebSocket error:', err);
-        proc.kill();
-    });
+    // If no valid session, destroy the socket to prevent hanging
+    socket.destroy();
 });
 
 const PORT = process.env.PORT || 5000;
