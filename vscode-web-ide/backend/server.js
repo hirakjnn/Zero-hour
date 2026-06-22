@@ -91,6 +91,9 @@ const previewProxy = createProxyMiddleware({
     xfwd: true, // Crucial for code-server to understand proxy protocol/host
     onError: (err, req, res) => {
         console.error('[HTTP Proxy Error]', err.message);
+        if (!res.headersSent) {
+            res.status(502).send('Error 502: The IDE container crashed or is unreachable. Run docker ps to check.');
+        }
     },
     logLevel: 'error'
 });
