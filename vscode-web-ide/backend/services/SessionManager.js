@@ -112,6 +112,41 @@ class SessionManager {
           console.warn(`[SessionManager] Challenge dir not found: ${challengeDir}`);
         }
       }
+
+      // Inject VS Code settings to disable welcome screen and auto-start OpenCode CLI
+      const vscodeDir = path.join(userWorkspaceDir, '.vscode');
+      if (!fs.existsSync(vscodeDir)) {
+          fs.mkdirSync(vscodeDir, { recursive: true });
+      }
+      
+      const settingsJson = {
+          "workbench.startupEditor": "none",
+          "security.workspace.trust.enabled": false,
+          "task.allowAutomaticTasks": "on",
+          "terminal.integrated.enableMultiLinePasteWarning": false
+      };
+      fs.writeFileSync(path.join(vscodeDir, 'settings.json'), JSON.stringify(settingsJson, null, 2));
+
+      const tasksJson = {
+          "version": "2.0.0",
+          "tasks": [
+              {
+                  "label": "OpenCode AI Assistant",
+                  "type": "shell",
+                  "command": "opencode",
+                  "presentation": {
+                      "reveal": "always",
+                      "panel": "new",
+                      "focus": true,
+                      "clear": true
+                  },
+                  "runOptions": {
+                      "runOn": "folderOpen"
+                  }
+              }
+          ]
+      };
+      fs.writeFileSync(path.join(vscodeDir, 'tasks.json'), JSON.stringify(tasksJson, null, 2));
     }
 
     const sessionData = {
