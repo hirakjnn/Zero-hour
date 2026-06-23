@@ -74,7 +74,6 @@ function initAiFab() {
         const input = document.getElementById('ai-chat-input');
         if (input) input.focus();
       }, 50);
-      alert('DEBUG: AI Window Opened! If you see this but no window, VS Code is hiding the DOM element.');
     } else {
       chatWindow.style.setProperty('display', 'none', 'important');
       isChatOpen = false;
