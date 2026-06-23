@@ -20,10 +20,9 @@ function initAiFab() {
     <span>Ask AI</span>
   `;
   
-  const chatWindow = document.createElement('div');
-  chatWindow.id = 'ai-chat-window';
-  chatWindow.style.display = 'none'; // explicitly initialize inline style
-  chatWindow.innerHTML = `
+  const dialog = document.createElement('dialog');
+  dialog.id = 'ai-chat-window';
+  dialog.innerHTML = `
     <div id="ai-chat-header">
       <strong>Zero Hour AI</strong>
       <button id="ai-chat-close">×</button>
@@ -58,25 +57,27 @@ function initAiFab() {
       opacity: 1;
       background: #0098ff;
     }
-    #ai-chat-window {
-      position: absolute;
-      top: 45px;
-      left: 50%;
-      transform: translateX(-50%);
+    dialog#ai-chat-window {
       width: 400px;
       height: 450px;
       background: #1e1e1e;
       border: 1px solid #444;
       border-radius: 6px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.7);
-      display: none;
-      flex-direction: column;
-      z-index: 99999999;
+      padding: 0;
+      margin: auto;
+      margin-top: 45px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
+      color: #ccc;
     }
-    #ai-chat-window.ai-show {
+    /* When dialog is open, it acts as a flex container */
+    dialog#ai-chat-window[open] {
       display: flex !important;
+      flex-direction: column !important;
+    }
+    dialog#ai-chat-window::backdrop {
+      background: rgba(0, 0, 0, 0.4);
     }
     #ai-chat-header {
       background: #252526;
@@ -147,15 +148,18 @@ function initAiFab() {
 
   document.head.appendChild(style);
 
-  // Inject into Titlebar Center (next to the search command center) and append chat window safely
+  // Maintain dialog in body using a constant loop so VS Code cannot destroy it
+  setInterval(() => {
+    if (!document.getElementById('ai-chat-window')) {
+      document.body.appendChild(dialog);
+    }
+  }, 1000);
+
+  // Inject into Titlebar Center (next to the search command center)
   const injectTimer = setInterval(() => {
-    // Attempt to find the center titlebar where the search window lives
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
-    const workbench = document.querySelector('.monaco-workbench');
-    
-    if (titleCenter && workbench && !document.getElementById('ai-fab')) {
+    if (titleCenter && !document.getElementById('ai-fab')) {
       titleCenter.appendChild(fab);
-      workbench.appendChild(chatWindow);
       clearInterval(injectTimer);
     }
   }, 1000);
@@ -167,17 +171,14 @@ function initAiFab() {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      const isHidden = chatWindow.style.display === 'none';
-      if (isHidden) {
-        chatWindow.style.setProperty('display', 'flex', 'important');
-        chatWindow.style.setProperty('visibility', 'visible', 'important');
-        chatWindow.style.setProperty('opacity', '1', 'important');
+      if (!dialog.open) {
+        dialog.showModal();
         setTimeout(() => {
           const input = document.getElementById('ai-chat-input');
           if (input) input.focus();
         }, 50);
       } else {
-        chatWindow.style.setProperty('display', 'none', 'important');
+        dialog.close();
       }
     }
   };
@@ -187,7 +188,7 @@ function initAiFab() {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      chatWindow.style.setProperty('display', 'none', 'important');
+      dialog.close();
     }
   };
 
