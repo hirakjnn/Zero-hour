@@ -5,54 +5,235 @@ const execSync = require('child_process').execSync;
 const guiderScript = `
 <script>
   window.addEventListener('DOMContentLoaded', () => {
-    const guider = document.createElement('div');
-    guider.id = 'ai-guider';
-    guider.innerHTML = \`
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: #007acc; box-shadow: 0 0 8px #007acc; animation: pulse 2s infinite;"></div>
-        <strong style="color: #007acc;">Zero Hour AI:</strong>
-        <span id="ai-guider-text">Initializing workspace...</span>
+    // 1. Hide the annoying 'insecure context' popup
+    setInterval(() => {
+      document.querySelectorAll('.notification-toast').forEach(toast => {
+        if (toast.innerText && toast.innerText.toLowerCase().includes('insecure context')) {
+          toast.style.display = 'none';
+        }
+      });
+    }, 1000);
+
+    // 2. Create the LLM Floating Action Button
+    const fab = document.createElement('div');
+    fab.id = 'ai-fab';
+    fab.innerHTML = \`
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    \`;
+    
+    const chatWindow = document.createElement('div');
+    chatWindow.id = 'ai-chat-window';
+    chatWindow.innerHTML = \`
+      <div id="ai-chat-header">
+        <strong>Zero Hour AI</strong>
+        <button id="ai-chat-close">×</button>
+      </div>
+      <div id="ai-chat-history">
+        <div class="ai-msg">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
+      </div>
+      <div id="ai-chat-input-container">
+        <input type="text" id="ai-chat-input" placeholder="Ask about the problem..." />
       </div>
     \`;
+
     const style = document.createElement('style');
     style.innerHTML = \`
-      #ai-guider {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(30, 30, 30, 0.85);
-        border: 1px solid #444;
-        border-radius: 6px;
-        padding: 10px 18px;
-        color: #eee;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        font-size: 13px;
+      #ai-fab {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 50px;
+        height: 50px;
+        background: #007acc;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         z-index: 999999;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-        backdrop-filter: blur(8px);
-        pointer-events: none;
+        transition: transform 0.2s;
       }
-      @keyframes pulse {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 204, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 122, 204, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 204, 0); }
+      #ai-fab:hover {
+        transform: scale(1.1);
+      }
+      #ai-chat-window {
+        position: fixed;
+        bottom: 100px;
+        right: 40px;
+        width: 320px;
+        height: 400px;
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+        display: none;
+        flex-direction: column;
+        z-index: 999999;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        overflow: hidden;
+      }
+      #ai-chat-header {
+        background: #252526;
+        padding: 10px 15px;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #ddd;
+        font-size: 14px;
+      }
+      #ai-chat-close {
+        background: none;
+        border: none;
+        color: #aaa;
+        font-size: 18px;
+        cursor: pointer;
+      }
+      #ai-chat-close:hover {
+        color: white;
+      }
+      #ai-chat-history {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        font-size: 13px;
+        color: #ccc;
+      }
+      .ai-msg {
+        background: #2d2d2d;
+        padding: 8px 12px;
+        border-radius: 6px;
+        align-self: flex-start;
+        max-width: 85%;
+        line-height: 1.4;
+      }
+      .user-msg {
+        background: #007acc;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        align-self: flex-end;
+        max-width: 85%;
+        line-height: 1.4;
+      }
+      #ai-chat-input-container {
+        padding: 10px;
+        border-top: 1px solid #333;
+        background: #252526;
+      }
+      #ai-chat-input {
+        width: 100%;
+        padding: 8px 10px;
+        background: #3c3c3c;
+        border: 1px solid #555;
+        border-radius: 4px;
+        color: white;
+        outline: none;
+        box-sizing: border-box;
+      }
+      #ai-chat-input:focus {
+        border-color: #007acc;
       }
     \`;
+
     document.head.appendChild(style);
-    document.body.appendChild(guider);
-    
-    setTimeout(() => {
-      const textElement = document.getElementById('ai-guider-text');
-      const text = "Welcome to Zero Hour. Open README.md to view your challenge instructions, and use the opencode CLI below to submit your solution.";
-      let i = 0;
-      textElement.innerHTML = '';
-      const interval = setInterval(() => {
-        textElement.innerHTML += text.charAt(i);
-        i++;
-        if (i >= text.length) clearInterval(interval);
-      }, 30);
-    }, 1500);
+    document.body.appendChild(fab);
+    document.body.appendChild(chatWindow);
+
+    fab.addEventListener('click', () => {
+      chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
+      if (chatWindow.style.display === 'flex') {
+        document.getElementById('ai-chat-input').focus();
+      }
+    });
+
+    document.getElementById('ai-chat-close').addEventListener('click', () => {
+      chatWindow.style.display = 'none';
+    });
+
+    const input = document.getElementById('ai-chat-input');
+    const history = document.getElementById('ai-chat-history');
+
+    let messageHistory = [];
+
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && input.value.trim() !== '') {
+        const text = input.value.trim();
+        input.value = '';
+        input.disabled = true;
+
+        // Add user message
+        const userDiv = document.createElement('div');
+        userDiv.className = 'user-msg';
+        userDiv.textContent = text;
+        history.appendChild(userDiv);
+        history.scrollTop = history.scrollHeight;
+
+        messageHistory.push({ role: 'user', content: text });
+
+        // Add AI placeholder
+        const aiDiv = document.createElement('div');
+        aiDiv.className = 'ai-msg';
+        aiDiv.textContent = '...';
+        history.appendChild(aiDiv);
+        history.scrollTop = history.scrollHeight;
+
+        try {
+          // fetch('/api/ai/chat') will hit the Node Express server since code-server is under /preview/
+          const res = await fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text,
+              history: messageHistory
+            })
+          });
+
+          if (!res.ok) throw new Error('Network error');
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          aiDiv.textContent = '';
+          let fullAiResponse = '';
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                try {
+                  const data = JSON.parse(line.replace('data: ', ''));
+                  if (data.text) {
+                    aiDiv.textContent += data.text;
+                    fullAiResponse += data.text;
+                    history.scrollTop = history.scrollHeight;
+                  }
+                } catch(e) {}
+              }
+            }
+          }
+          
+          messageHistory.push({ role: 'assistant', content: fullAiResponse });
+
+        } catch (error) {
+          aiDiv.textContent = 'Sorry, I am currently disconnected or there was an error.';
+        } finally {
+          input.disabled = false;
+          input.focus();
+        }
+      }
+    });
   });
 </script>
 `;
@@ -63,12 +244,12 @@ try {
   
   files.forEach(file => {
     let content = fs.readFileSync(file, 'utf8');
-    if (!content.includes('id="ai-guider"')) {
+    if (!content.includes('id="ai-fab"')) {
       content = content.replace('</body>', `\n${guiderScript}\n</body>`);
       fs.writeFileSync(file, content);
-      console.log('Injected AI Guider into ' + file);
+      console.log('Injected AI Chat Window into ' + file);
     }
   });
 } catch (e) {
-  console.error('Failed to inject AI guider:', e);
+  console.error('Failed to inject AI chat:', e);
 }

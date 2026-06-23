@@ -13,8 +13,10 @@ RUN apt-get update && apt-get install -y \
     fzf \
     && rm -rf /var/lib/apt/lists/*
 
-# Install OpenCode CLI via official bash script (npm package might be broken/unofficial)
-RUN curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash
+# Install OpenCode CLI via official bash script and make it globally available
+RUN curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash \
+    && mv /root/.opencode/bin/opencode /usr/local/bin/opencode \
+    && chmod +x /usr/local/bin/opencode
 
 # (Reverted physical deletion of built-in extensions because removing core chat UI extensions crashes the VS Code workbench)
 
