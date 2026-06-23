@@ -89,6 +89,12 @@ const previewProxy = createProxyMiddleware({
     },
     changeOrigin: true,
     xfwd: true, // Crucial for code-server to understand proxy protocol/host
+    onProxyRes: (proxyRes, req, res) => {
+        // NUKE the CSP header completely from code-server responses
+        // This allows our injected inline scripts in workbench.html to execute freely
+        delete proxyRes.headers['content-security-policy'];
+        delete proxyRes.headers['content-security-policy-report-only'];
+    },
     onError: (err, req, res) => {
         console.error('[HTTP Proxy Error]', err.message);
         if (!res.headersSent) {
