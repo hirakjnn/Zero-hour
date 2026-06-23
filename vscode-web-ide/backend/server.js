@@ -15,8 +15,52 @@ const sessionManager = require('./services/SessionManager');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const httpProxy = require('http-proxy');
 
-// Standalone AI Chat UI Route (Bypasses VS Code entirely)
+
+const rawWsProxy = httpProxy.createProxyServer({
+    ws: true,
+    changeOrigin: true,
+    xfwd: true
+});
+
+rawWsProxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+    try {
+        const port = options.target.port || new URL(options.target).port;
+        proxyReq.setHeader('Origin', `http://127.0.0.1:${port}`);
+    } catch(e) {}
+});
+
+rawWsProxy.on('error', (err, req, socket) => {
+    console.error('[WS Proxy Error]', err.message);
+    if (socket && !socket.destroyed) {
+        socket.destroy();
+    }
+});
+
 const app = express();
+const server = http.createServer(app);
+
+// Obsolete custom terminal removed
+
+// CORS - allow frontend origin (supports hosting via env vars)
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173'];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
+            callback(null, true);
+        } else {
+            callback(null, true); // allow all in dev; tighten in prod
+        }
+    },
+    credentials: true
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Standalone AI Chat UI Route (Bypasses VS Code entirely)
 app.get('/ai-chat', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -176,50 +220,6 @@ app.get('/ai-chat', (req, res) => {
     </html>
   `);
 });
-
-const rawWsProxy = httpProxy.createProxyServer({
-    ws: true,
-    changeOrigin: true,
-    xfwd: true
-});
-
-rawWsProxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
-    try {
-        const port = options.target.port || new URL(options.target).port;
-        proxyReq.setHeader('Origin', `http://127.0.0.1:${port}`);
-    } catch(e) {}
-});
-
-rawWsProxy.on('error', (err, req, socket) => {
-    console.error('[WS Proxy Error]', err.message);
-    if (socket && !socket.destroyed) {
-        socket.destroy();
-    }
-});
-
-const app = express();
-const server = http.createServer(app);
-
-// Obsolete custom terminal removed
-
-// CORS - allow frontend origin (supports hosting via env vars)
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173'];
-
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
-            callback(null, true);
-        } else {
-            callback(null, true); // allow all in dev; tighten in prod
-        }
-    },
-    credentials: true
-}));
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
 
 // Inject Session Middleware from frontend headers
 app.use((req, res, next) => {
