@@ -7,15 +7,15 @@ const guiderScript = `
   window.addEventListener('DOMContentLoaded', () => {
     const guider = document.createElement('div');
     guider.id = 'ai-guider';
-    guider.innerHTML = `
+    guider.innerHTML = \`
       <div style="display: flex; align-items: center; gap: 10px;">
         <div style="width: 8px; height: 8px; border-radius: 50%; background: #007acc; box-shadow: 0 0 8px #007acc; animation: pulse 2s infinite;"></div>
         <strong style="color: #007acc;">Zero Hour AI:</strong>
         <span id="ai-guider-text">Initializing workspace...</span>
       </div>
-    `;
+    \`;
     const style = document.createElement('style');
-    style.innerHTML = `
+    style.innerHTML = \`
       #ai-guider {
         position: absolute;
         top: 20px;
@@ -38,7 +38,7 @@ const guiderScript = `
         70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 122, 204, 0); }
         100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 122, 204, 0); }
       }
-    `;
+    \`;
     document.head.appendChild(style);
     document.body.appendChild(guider);
     
