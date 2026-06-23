@@ -146,33 +146,38 @@ function initAiFab() {
   `;
 
   document.head.appendChild(style);
-  document.body.appendChild(chatWindow);
 
-  // Inject into Titlebar Center (next to the search command center)
+  // Inject into Titlebar Center (next to the search command center) and append chat window safely
   const injectTimer = setInterval(() => {
     // Attempt to find the center titlebar where the search window lives
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
-    if (titleCenter && !document.getElementById('ai-fab')) {
+    const workbench = document.querySelector('.monaco-workbench');
+    
+    if (titleCenter && workbench && !document.getElementById('ai-fab')) {
       titleCenter.appendChild(fab);
+      workbench.appendChild(chatWindow);
       clearInterval(injectTimer);
     }
   }, 1000);
 
-  // ULTIMATE EVENT INTERCEPTION
+  // Use inline styles with !important to violently override any VS Code CSS rules that hide unknown elements
   const handleFabClick = (e) => {
-    // Check if the user clicked the FAB or any of its children (like the SVG or span)
     if (e.target && (e.target.id === 'ai-fab' || (typeof e.target.closest === 'function' && e.target.closest('#ai-fab')))) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      chatWindow.classList.toggle('ai-show');
-      
-      if (chatWindow.classList.contains('ai-show')) {
+      const isHidden = chatWindow.style.display === 'none';
+      if (isHidden) {
+        chatWindow.style.setProperty('display', 'flex', 'important');
+        chatWindow.style.setProperty('visibility', 'visible', 'important');
+        chatWindow.style.setProperty('opacity', '1', 'important');
         setTimeout(() => {
           const input = document.getElementById('ai-chat-input');
           if (input) input.focus();
         }, 50);
+      } else {
+        chatWindow.style.setProperty('display', 'none', 'important');
       }
     }
   };
@@ -182,7 +187,7 @@ function initAiFab() {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      chatWindow.classList.remove('ai-show');
+      chatWindow.style.setProperty('display', 'none', 'important');
     }
   };
 
