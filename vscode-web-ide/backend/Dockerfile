@@ -28,5 +28,8 @@ RUN mkdir -p /home/coder/.local/share/code-server/User \
 # Nuclear CSS Injection: Forcefully hide the Auxiliary Bar, all Chat UI elements, and the Extensions tab
 RUN find /usr/lib/code-server /usr/local /opt /home/coder -type f \( -name "workbench.html" -o -name "index.html" \) 2>/dev/null | xargs -I {} sed -i 's|</head>|<style>.part.auxiliarybar, [id*="workbench.parts.auxiliarybar"], [aria-label*="Chat"], [id*="chat"], .chat-view, [aria-label*="Extensions"], [id*="workbench.view.extensions"] { display: none !important; opacity: 0 !important; pointer-events: none !important; width: 0 !important; overflow: hidden !important; position: absolute !important; left: -9999px !important; }</style></head>|' {} || true
 
+COPY inject_guider.js /tmp/inject_guider.js
+RUN node /tmp/inject_guider.js
+
 # Drop back to regular user for execution
 USER coder
