@@ -61,9 +61,7 @@ function initAiFab() {
     }
   };
 
-  fab.addEventListener('mousedown', toggleChat);
   fab.addEventListener('click', toggleChat);
-  fab.addEventListener('touchstart', toggleChat);
 
   // Allow the iframe to close itself if it wants to communicate via postMessage
   window.addEventListener('message', (event) => {
