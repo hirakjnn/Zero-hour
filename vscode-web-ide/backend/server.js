@@ -76,7 +76,7 @@ const previewProxy = createProxyMiddleware({
     target: 'http://127.0.0.1:32000', // Default dummy target
     router: (req) => {
         // Extract sessionId from URL (works for both HTTP and WebSocket reqs)
-        const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+        const match = req.url.match(/^\/ide\/([a-zA-Z0-9]+)/);
         if (match) {
             const session = sessionManager.getSession(match[1]);
             if (session) return `http://127.0.0.1:${session.port}`;
@@ -85,7 +85,7 @@ const previewProxy = createProxyMiddleware({
     },
     pathRewrite: (path, req) => {
         // MUST strip the path so code-server serves from / to prevent 'Not found.'
-        return path.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
+        return path.replace(/^\/ide\/[a-zA-Z0-9]+/, '');
     },
     changeOrigin: true,
     xfwd: true, // Crucial for code-server to understand proxy protocol/host
@@ -106,8 +106,8 @@ const previewProxy = createProxyMiddleware({
 
 // HTTP middleware to catch invalid sessions gracefully and enforce trailing slashes
 app.use((req, res, next) => {
-    if (req.url.startsWith('/preview/')) {
-        const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+    if (req.url.startsWith('/ide/')) {
+        const match = req.url.match(/^\/ide\/([a-zA-Z0-9]+)/);
         if (match) {
             const sessionId = match[1];
             const session = sessionManager.getSession(sessionId);
@@ -121,12 +121,12 @@ app.use((req, res, next) => {
             res.setHeader('Clear-Site-Data', '"cache", "storage", "executionContexts"');
 
             // ENFORCE TRAILING SLASH (CRITICAL FOR CODE-SERVER SUBPATH ROUTING)
-            // If the URL is exactly /preview/123, code-server returns "Not found."
-            // It strictly requires /preview/123/
+            // If the URL is exactly /ide/123, code-server returns "Not found."
+            // It strictly requires /ide/123/
             try {
                 const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-                if (urlObj.pathname === `/preview/${sessionId}`) {
-                    return res.redirect(`/preview/${sessionId}/${urlObj.search}`);
+                if (urlObj.pathname === `/ide/${sessionId}`) {
+                    return res.redirect(`/ide/${sessionId}/${urlObj.search}`);
                 }
             } catch(e) {}
         }
@@ -134,9 +134,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// Apply proxy for HTTP traffic (Using raw app.use to prevent Express from stripping the /preview prefix)
+// Apply proxy for HTTP traffic (Using raw app.use to prevent Express from stripping the /ide prefix)
 app.use((req, res, next) => {
     if (req.url.startsWith('/preview')) {
+        return res.redirect(req.url.replace('/preview', '/ide'));
+    }
+    if (req.url.startsWith('/ide')) {
         return previewProxy(req, res, next);
     }
     next();
@@ -156,7 +159,7 @@ app.get('/health', (req, res) => {
 
 // WebSocket Upgrade Handler for Code-Server
 server.on('upgrade', (req, socket, head) => {
-    const match = req.url.match(/^\/preview\/([a-zA-Z0-9]+)/);
+    const match = req.url.match(/^\/ide\/([a-zA-Z0-9]+)/);
     if (match) {
         const sessionId = match[1];
         const session = sessionManager.getSession(sessionId);
@@ -164,8 +167,8 @@ server.on('upgrade', (req, socket, head) => {
             // Touch session to keep it alive
             sessionManager.touchSession(sessionId);
 
-            // Strip the /preview/123/ prefix so code-server gets the WebSocket at its root
-            req.url = req.url.replace(/^\/preview\/[a-zA-Z0-9]+/, '');
+            // Strip the /ide/123/ prefix so code-server gets the WebSocket at its root
+            req.url = req.url.replace(/^\/ide\/[a-zA-Z0-9]+/, '');
             
             // Bypass http-proxy-middleware entirely and proxy the socket manually
             // This guarantees the dynamic port is respected and the dead-port bug is bypassed

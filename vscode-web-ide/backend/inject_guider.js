@@ -2,7 +2,7 @@ const fs = require('fs');
 const execSync = require('child_process').execSync;
 
 try {
-  const output = execSync('find /usr/lib/code-server /usr/local /opt /home/coder -type f \\( -name "workbench.html" -o -name "index.html" \\) 2>/dev/null').toString();
+  const output = execSync('find / -type f \\( -name "workbench.html" -o -name "index.html" \\) 2>/dev/null').toString();
   const files = output.split('\n').filter(Boolean);
   
   const aiFabContent = fs.readFileSync('/tmp/ai_fab.js', 'utf8');
