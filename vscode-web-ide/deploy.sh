@@ -47,8 +47,12 @@ echo "⚙️ Setting up Backend Server..."
 npm install
 
 echo "▶️ Launching Backend via PM2..."
-# Kill any existing processes
+# Kill any existing PM2 processes
 pm2 delete zerohour-backend 2>/dev/null || true
+
+# CRITICAL FIX: Kill any lingering session containers so the next connection uses the freshly built Docker image!
+echo "🧹 Cleaning up old session containers..."
+docker ps -q --filter "name=code-server-" | grep -q . && docker rm -f $(docker ps -q --filter "name=code-server-") || true
 
 # Start using the ecosystem config we created earlier
 pm2 start ecosystem.config.js
