@@ -15,6 +15,168 @@ const sessionManager = require('./services/SessionManager');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const httpProxy = require('http-proxy');
 
+// Standalone AI Chat UI Route (Bypasses VS Code entirely)
+const app = express();
+app.get('/ai-chat', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Zero Hour AI</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          background: #1e1e1e;
+          color: #ccc;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+        }
+        #ai-chat-header {
+          background: #252526;
+          padding: 15px;
+          border-bottom: 1px solid #333;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          color: #ddd;
+          font-size: 16px;
+        }
+        #ai-chat-history {
+          flex: 1;
+          padding: 15px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          font-size: 14px;
+        }
+        .ai-msg {
+          background: #2d2d2d;
+          padding: 10px 14px;
+          border-radius: 6px;
+          align-self: flex-start;
+          max-width: 85%;
+          line-height: 1.4;
+        }
+        .user-msg {
+          background: #007acc;
+          color: white;
+          padding: 10px 14px;
+          border-radius: 6px;
+          align-self: flex-end;
+          max-width: 85%;
+          line-height: 1.4;
+        }
+        #ai-chat-input-container {
+          padding: 15px;
+          border-top: 1px solid #333;
+          background: #252526;
+        }
+        #ai-chat-input {
+          width: 100%;
+          padding: 10px 12px;
+          background: #3c3c3c;
+          border: 1px solid #555;
+          border-radius: 4px;
+          color: white;
+          outline: none;
+          box-sizing: border-box;
+          font-size: 14px;
+        }
+        #ai-chat-input:focus {
+          border-color: #007acc;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="ai-chat-header">
+        <strong>Zero Hour AI</strong>
+      </div>
+      <div id="ai-chat-history">
+        <div class="ai-msg">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
+      </div>
+      <div id="ai-chat-input-container">
+        <input type="text" id="ai-chat-input" placeholder="Ask about the problem... (Press Enter to send)" />
+      </div>
+
+      <script>
+        const input = document.getElementById('ai-chat-input');
+        const history = document.getElementById('ai-chat-history');
+        let messageHistory = [];
+
+        input.addEventListener('keydown', async (e) => {
+          if (e.key === 'Enter' && input.value.trim() !== '') {
+            const text = input.value.trim();
+            input.value = '';
+            input.disabled = true;
+
+            const userDiv = document.createElement('div');
+            userDiv.className = 'user-msg';
+            userDiv.textContent = text;
+            history.appendChild(userDiv);
+            history.scrollTop = history.scrollHeight;
+
+            messageHistory.push({ role: 'user', content: text });
+
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'ai-msg';
+            aiDiv.textContent = '...';
+            history.appendChild(aiDiv);
+            history.scrollTop = history.scrollHeight;
+
+            try {
+              const res = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, history: messageHistory })
+              });
+
+              if (!res.ok) throw new Error('Network error');
+
+              const reader = res.body.getReader();
+              const decoder = new TextDecoder();
+              aiDiv.textContent = '';
+              let fullAiResponse = '';
+
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\\n');
+                
+                for (const line of lines) {
+                  if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                    try {
+                      const data = JSON.parse(line.replace('data: ', ''));
+                      if (data.text) {
+                        aiDiv.textContent += data.text;
+                        fullAiResponse += data.text;
+                        history.scrollTop = history.scrollHeight;
+                      }
+                    } catch(err) {}
+                  }
+                }
+              }
+              messageHistory.push({ role: 'assistant', content: fullAiResponse });
+
+            } catch (error) {
+              aiDiv.textContent = 'Sorry, I am currently disconnected or there was an error.';
+            } finally {
+              input.disabled = false;
+              input.focus();
+            }
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 const rawWsProxy = httpProxy.createProxyServer({
     ws: true,
     changeOrigin: true,

@@ -46,13 +46,6 @@ function initAiFab() {
   fab.onmouseenter = () => fab.style.opacity = '1';
   fab.onmouseleave = () => fab.style.opacity = '0.9';
 
-  // Maintain dialog in body using a constant loop so VS Code cannot destroy it
-  setInterval(() => {
-    if (!document.getElementById('ai-chat-window')) {
-      document.body.appendChild(dialog);
-    }
-  }, 1000);
-
   // Inject into Titlebar Center (next to the search command center)
   const injectTimer = setInterval(() => {
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
@@ -68,107 +61,14 @@ function initAiFab() {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      if (!dialog.open) {
-        dialog.showModal();
-        setTimeout(() => {
-          const input = document.getElementById('ai-chat-input');
-          if (input) input.focus();
-        }, 50);
-      } else {
-        dialog.close();
-      }
-    }
-  };
-
-  const handleCloseClick = (e) => {
-    if (e.target && (e.target.id === 'ai-chat-close' || (typeof e.target.closest === 'function' && e.target.closest('#ai-chat-close')))) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      dialog.close();
+      // Completely bypass VS Code DOM and CSS by opening a native popup window!
+      window.open('/ai-chat', 'ZeroHourAI', 'width=450,height=550,menubar=no,toolbar=no,location=no,status=no');
     }
   };
 
   // Bind to all possible interactions on the highest possible capture level!
   ['mousedown', 'pointerdown', 'click', 'touchstart'].forEach(evt => {
     window.addEventListener(evt, handleFabClick, true);
-    window.addEventListener(evt, handleCloseClick, true);
-  });
-
-  const input = dialog.querySelector('#ai-chat-input');
-  const history = dialog.querySelector('#ai-chat-history');
-
-  let messageHistory = [];
-
-  input.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter' && input.value.trim() !== '') {
-      const text = input.value.trim();
-      input.value = '';
-      input.disabled = true;
-
-      // Add user message
-      const userDiv = document.createElement('div');
-      userDiv.style.cssText = "background: #007acc !important; color: white !important; padding: 8px 12px !important; border-radius: 6px !important; align-self: flex-end !important; max-width: 85% !important; line-height: 1.4 !important;";
-      userDiv.textContent = text;
-      history.appendChild(userDiv);
-      history.scrollTop = history.scrollHeight;
-
-      messageHistory.push({ role: 'user', content: text });
-
-      // Add AI placeholder
-      const aiDiv = document.createElement('div');
-      aiDiv.style.cssText = "background: #2d2d2d !important; padding: 8px 12px !important; border-radius: 6px !important; align-self: flex-start !important; max-width: 85% !important; line-height: 1.4 !important; color: #ccc !important;";
-      aiDiv.textContent = '...';
-      history.appendChild(aiDiv);
-      history.scrollTop = history.scrollHeight;
-
-      try {
-        const res = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            history: messageHistory
-          })
-        });
-
-        if (!res.ok) throw new Error('Network error');
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        aiDiv.textContent = '';
-        let fullAiResponse = '';
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-              try {
-                const data = JSON.parse(line.replace('data: ', ''));
-                if (data.text) {
-                  aiDiv.textContent += data.text;
-                  fullAiResponse += data.text;
-                  history.scrollTop = history.scrollHeight;
-                }
-              } catch(e) {}
-            }
-          }
-        }
-        
-        messageHistory.push({ role: 'assistant', content: fullAiResponse });
-
-      } catch (error) {
-        aiDiv.textContent = 'Sorry, I am currently disconnected or there was an error.';
-      } finally {
-        input.disabled = false;
-        input.focus();
-      }
-    }
   });
 }
 
