@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
     fzf \
     && rm -rf /var/lib/apt/lists/*
 
-# Install OpenCode CLI globally using npm (this ensures the agent component is correctly bundled)
-RUN npm install -g opencode-ai
+# Install OpenCode CLI via official bash script (npm package might be broken/unofficial)
+RUN curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash
 
 # (Reverted physical deletion of built-in extensions because removing core chat UI extensions crashes the VS Code workbench)
 

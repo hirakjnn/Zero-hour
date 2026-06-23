@@ -163,7 +163,7 @@ class SessionManager {
               {
                   "label": "OpenCode AI Assistant",
                   "type": "shell",
-                  "command": "bash -i -c 'unset TERM_PROGRAM; unset VSCODE_IPC_HOOK_CLI; opencode; echo \"[Process Exited]\"; exec bash'",
+                  "command": "unset TERM_PROGRAM && unset VSCODE_IPC_HOOK_CLI && opencode || sleep 600",
                   "presentation": {
                       "reveal": "always",
                       "panel": "new",
