@@ -22,131 +22,29 @@ function initAiFab() {
   
   const dialog = document.createElement('dialog');
   dialog.id = 'ai-chat-window';
+  dialog.style.cssText = "width: 400px !important; height: 450px !important; background: #1e1e1e !important; border: 1px solid #444 !important; border-radius: 6px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.7) !important; padding: 0 !important; margin: auto !important; margin-top: 45px !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; overflow: hidden !important; color: #ccc !important;";
+  
+  // Using an inner wrapper to act as the flex container since dialog[open] inline styles can be tricky
   dialog.innerHTML = `
-    <div id="ai-chat-header">
-      <strong>Zero Hour AI</strong>
-      <button id="ai-chat-close">×</button>
-    </div>
-    <div id="ai-chat-history">
-      <div class="ai-msg">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
-    </div>
-    <div id="ai-chat-input-container">
-      <input type="text" id="ai-chat-input" placeholder="Ask about the problem..." />
+    <div id="ai-chat-wrapper" style="display: flex !important; flex-direction: column !important; height: 100% !important; width: 100% !important;">
+      <div id="ai-chat-header" style="background: #252526 !important; padding: 10px 15px !important; border-bottom: 1px solid #333 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; color: #ddd !important; font-size: 14px !important;">
+        <strong>Zero Hour AI</strong>
+        <button id="ai-chat-close" style="background: none !important; border: none !important; color: #aaa !important; font-size: 18px !important; cursor: pointer !important;">×</button>
+      </div>
+      <div id="ai-chat-history" style="flex: 1 !important; padding: 15px !important; overflow-y: auto !important; display: flex !important; flex-direction: column !important; gap: 10px !important; font-size: 13px !important; color: #ccc !important;">
+        <div class="ai-msg" style="background: #2d2d2d !important; padding: 8px 12px !important; border-radius: 6px !important; align-self: flex-start !important; max-width: 85% !important; line-height: 1.4 !important;">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
+      </div>
+      <div id="ai-chat-input-container" style="padding: 10px !important; border-top: 1px solid #333 !important; background: #252526 !important;">
+        <input type="text" id="ai-chat-input" placeholder="Ask about the problem..." style="width: 100% !important; padding: 8px 10px !important; background: #3c3c3c !important; border: 1px solid #555 !important; border-radius: 4px !important; color: white !important; outline: none !important; box-sizing: border-box !important;" />
+      </div>
     </div>
   `;
 
-  const style = document.createElement('style');
-  style.innerHTML = `
-    #ai-fab {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0 10px;
-      height: 24px;
-      background: #007acc;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      margin-left: 10px;
-      opacity: 0.9;
-      pointer-events: auto !important;
-      z-index: 999999;
-    }
-    #ai-fab:hover {
-      opacity: 1;
-      background: #0098ff;
-    }
-    dialog#ai-chat-window {
-      width: 400px;
-      height: 450px;
-      background: #1e1e1e;
-      border: 1px solid #444;
-      border-radius: 6px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.7);
-      padding: 0;
-      margin: auto;
-      margin-top: 45px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow: hidden;
-      color: #ccc;
-    }
-    /* When dialog is open, it acts as a flex container */
-    dialog#ai-chat-window[open] {
-      display: flex !important;
-      flex-direction: column !important;
-    }
-    dialog#ai-chat-window::backdrop {
-      background: rgba(0, 0, 0, 0.4);
-    }
-    #ai-chat-header {
-      background: #252526;
-      padding: 10px 15px;
-      border-bottom: 1px solid #333;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #ddd;
-      font-size: 14px;
-    }
-    #ai-chat-close {
-      background: none;
-      border: none;
-      color: #aaa;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    #ai-chat-close:hover {
-      color: white;
-    }
-    #ai-chat-history {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      font-size: 13px;
-      color: #ccc;
-    }
-    .ai-msg {
-      background: #2d2d2d;
-      padding: 8px 12px;
-      border-radius: 6px;
-      align-self: flex-start;
-      max-width: 85%;
-      line-height: 1.4;
-    }
-    .user-msg {
-      background: #007acc;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      align-self: flex-end;
-      max-width: 85%;
-      line-height: 1.4;
-    }
-    #ai-chat-input-container {
-      padding: 10px;
-      border-top: 1px solid #333;
-      background: #252526;
-    }
-    #ai-chat-input {
-      width: 100%;
-      padding: 8px 10px;
-      background: #3c3c3c;
-      border: 1px solid #555;
-      border-radius: 4px;
-      color: white;
-      outline: none;
-      box-sizing: border-box;
-    }
-    #ai-chat-input:focus {
-      border-color: #007acc;
-    }
-  `;
+  // Apply FAB styling directly inline
+  fab.style.cssText = "display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 10px !important; height: 24px !important; background: #007acc !important; color: white !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; margin-left: 10px !important; opacity: 0.9 !important; pointer-events: auto !important; z-index: 999999 !important;";
 
-  document.head.appendChild(style);
+  fab.onmouseenter = () => fab.style.opacity = '1';
+  fab.onmouseleave = () => fab.style.opacity = '0.9';
 
   // Maintain dialog in body using a constant loop so VS Code cannot destroy it
   setInterval(() => {
@@ -164,7 +62,6 @@ function initAiFab() {
     }
   }, 1000);
 
-  // Use inline styles with !important to violently override any VS Code CSS rules that hide unknown elements
   const handleFabClick = (e) => {
     if (e.target && (e.target.id === 'ai-fab' || (typeof e.target.closest === 'function' && e.target.closest('#ai-fab')))) {
       e.preventDefault();
@@ -198,8 +95,8 @@ function initAiFab() {
     window.addEventListener(evt, handleCloseClick, true);
   });
 
-  const input = document.getElementById('ai-chat-input');
-  const history = document.getElementById('ai-chat-history');
+  const input = dialog.querySelector('#ai-chat-input');
+  const history = dialog.querySelector('#ai-chat-history');
 
   let messageHistory = [];
 
@@ -211,7 +108,7 @@ function initAiFab() {
 
       // Add user message
       const userDiv = document.createElement('div');
-      userDiv.className = 'user-msg';
+      userDiv.style.cssText = "background: #007acc !important; color: white !important; padding: 8px 12px !important; border-radius: 6px !important; align-self: flex-end !important; max-width: 85% !important; line-height: 1.4 !important;";
       userDiv.textContent = text;
       history.appendChild(userDiv);
       history.scrollTop = history.scrollHeight;
@@ -220,7 +117,7 @@ function initAiFab() {
 
       // Add AI placeholder
       const aiDiv = document.createElement('div');
-      aiDiv.className = 'ai-msg';
+      aiDiv.style.cssText = "background: #2d2d2d !important; padding: 8px 12px !important; border-radius: 6px !important; align-self: flex-start !important; max-width: 85% !important; line-height: 1.4 !important; color: #ccc !important;";
       aiDiv.textContent = '...';
       history.appendChild(aiDiv);
       history.scrollTop = history.scrollHeight;
