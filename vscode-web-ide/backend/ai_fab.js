@@ -34,30 +34,12 @@ function initAiFab() {
     }
   }, 1000);
 
-  // 3. Build the native <dialog> element. This guarantees Top Layer placement above VS Code.
-  const chatDialog = document.createElement('dialog');
-  chatDialog.id = 'ai-chat-window';
-  
-  // Notice we don't set display: none here. Dialogs are hidden by default until showModal() is called.
-  chatDialog.style.cssText = "width: 420px !important; height: 500px !important; background: #1e1e1e !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; padding: 0 !important; margin: auto !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; color: #ccc !important; position: fixed !important; top: 50px !important; right: 20px !important; margin-right: 20px !important; overflow: hidden !important;";
-
-  chatDialog.innerHTML = `
-    <div style="display: flex !important; flex-direction: column !important; height: 100% !important;">
-      <div id="ai-chat-header" style="background: #252526 !important; padding: 12px 16px !important; border-bottom: 1px solid #333 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; color: #ddd !important; font-size: 15px !important; font-weight: bold !important; user-select: none !important;">
-        <span>Zero Hour AI</span>
-        <button id="ai-chat-close" style="background: none !important; border: none !important; color: #aaa !important; font-size: 20px !important; cursor: pointer !important; padding: 0 5px !important;">×</button>
-      </div>
-      <div id="ai-chat-history" style="flex: 1 !important; padding: 15px !important; overflow-y: auto !important; display: flex !important; flex-direction: column !important; gap: 12px !important; font-size: 13px !important; color: #ccc !important;">
-        <div class="ai-msg" style="background: #2d2d2d !important; padding: 10px 14px !important; border-radius: 6px !important; align-self: flex-start !important; max-width: 85% !important; line-height: 1.4 !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
-      </div>
-      <div id="ai-chat-input-container" style="padding: 12px !important; border-top: 1px solid #333 !important; background: #252526 !important; display: flex !important;">
-        <input type="text" id="ai-chat-input" placeholder="Ask about the problem..." style="flex: 1 !important; width: 100% !important; padding: 10px 12px !important; background: #3c3c3c !important; border: 1px solid #555 !important; border-radius: 4px !important; color: white !important; outline: none !important; box-sizing: border-box !important; font-size: 13px !important;" />
-      </div>
-    </div>
-  `;
-
-  // Append dialog to document.documentElement (<html>) to stay as far outside VS Code's body as possible
-  document.documentElement.appendChild(chatDialog);
+  // 3. Create the Iframe Container for the Chat UI
+  // Using an iframe perfectly isolates our Chat UI from VS Code's aggressive CSS/DOM sandbox
+  const chatIframe = document.createElement('iframe');
+  chatIframe.id = 'ai-chat-iframe';
+  chatIframe.src = '/ai-chat';
+  chatIframe.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: none !important; background: #1e1e1e !important;";
 
   let isChatOpen = false;
 
@@ -66,27 +48,15 @@ function initAiFab() {
     e.stopPropagation();
 
     if (!isChatOpen) {
-      // Re-append to <html> if VS Code's layout engine deleted it
-      if (chatDialog.parentNode !== document.documentElement) {
-        document.documentElement.appendChild(chatDialog);
+      // Force append to the main workbench container to guarantee visibility
+      const workbench = document.querySelector('.monaco-workbench') || document.body;
+      if (chatIframe.parentNode !== workbench) {
+        workbench.appendChild(chatIframe);
       }
-      
-      // Use the native Top Layer API to completely break out of VS Code CSS
-      try {
-        chatDialog.showModal();
-        chatDialog.style.setProperty('display', 'block', 'important'); // Fix for some browsers that need display set
-      } catch (err) {
-        // If already open, ignore
-      }
+      chatIframe.style.setProperty('display', 'block', 'important');
       isChatOpen = true;
-
-      setTimeout(() => {
-        const input = document.getElementById('ai-chat-input');
-        if (input) input.focus();
-      }, 50);
     } else {
-      chatDialog.close();
-      chatDialog.style.setProperty('display', 'none', 'important');
+      chatIframe.style.setProperty('display', 'none', 'important');
       isChatOpen = false;
     }
   };
@@ -95,95 +65,13 @@ function initAiFab() {
   fab.addEventListener('click', toggleChat);
   fab.addEventListener('touchstart', toggleChat);
 
-  const closeBtn = chatDialog.querySelector('#ai-chat-close');
-  if (closeBtn) {
-    const closeChat = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      chatDialog.close();
-      chatDialog.style.setProperty('display', 'none', 'important');
+  // Allow the iframe to close itself if it wants to communicate via postMessage
+  window.addEventListener('message', (event) => {
+    if (event.data === 'close-ai-chat') {
+      chatIframe.style.setProperty('display', 'none', 'important');
       isChatOpen = false;
-    };
-    closeBtn.addEventListener('mousedown', closeChat);
-    closeBtn.addEventListener('click', closeChat);
-    closeBtn.addEventListener('touchstart', closeChat);
-  }
-
-  const input = chatDialog.querySelector('#ai-chat-input');
-  const history = chatDialog.querySelector('#ai-chat-history');;
-
-  let messageHistory = [];
-
-  input.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter' && input.value.trim() !== '') {
-      const text = input.value.trim();
-      input.value = '';
-      input.disabled = true;
-
-      // Add user message
-      const userDiv = document.createElement('div');
-      userDiv.style.cssText = "background: #007acc !important; color: white !important; padding: 10px 14px !important; border-radius: 6px !important; align-self: flex-end !important; max-width: 85% !important; line-height: 1.4 !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;";
-      userDiv.textContent = text;
-      history.appendChild(userDiv);
-      history.scrollTop = history.scrollHeight;
-
-      messageHistory.push({ role: 'user', content: text });
-
-      // Add AI placeholder
-      const aiDiv = document.createElement('div');
-      aiDiv.style.cssText = "background: #2d2d2d !important; padding: 10px 14px !important; border-radius: 6px !important; align-self: flex-start !important; max-width: 85% !important; line-height: 1.4 !important; color: #ccc !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;";
-      aiDiv.textContent = '...';
-      history.appendChild(aiDiv);
-      history.scrollTop = history.scrollHeight;
-
-      try {
-        const res = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            history: messageHistory
-          })
-        });
-
-        if (!res.ok) throw new Error('Network error');
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        aiDiv.textContent = '';
-        let fullAiResponse = '';
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-              try {
-                const data = JSON.parse(line.replace('data: ', ''));
-                if (data.text) {
-                  aiDiv.textContent += data.text;
-                  fullAiResponse += data.text;
-                  history.scrollTop = history.scrollHeight;
-                }
-              } catch(e) {}
-            }
-          }
-        }
-        
-        messageHistory.push({ role: 'assistant', content: fullAiResponse });
-
-      } catch (error) {
-        aiDiv.textContent = 'Sorry, I am currently disconnected or there was an error.';
-      } finally {
-        input.disabled = false;
-        input.focus();
-      }
     }
-  });
+  });;
 }
 
 if (document.readyState === 'loading') {

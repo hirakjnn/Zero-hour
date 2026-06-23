@@ -138,6 +138,7 @@ app.get('/ai-chat', (req, res) => {
     <body>
       <div id="ai-chat-header">
         <strong>Zero Hour AI</strong>
+        <button id="ai-chat-close" style="background: none; border: none; color: #aaa; font-size: 20px; cursor: pointer; padding: 0 5px;">×</button>
       </div>
       <div id="ai-chat-history">
         <div class="ai-msg">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
@@ -147,6 +148,12 @@ app.get('/ai-chat', (req, res) => {
       </div>
 
       <script>
+        const closeBtn = document.getElementById('ai-chat-close');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            window.parent.postMessage('close-ai-chat', '*');
+          });
+        }
         const input = document.getElementById('ai-chat-input');
         const history = document.getElementById('ai-chat-history');
         let messageHistory = [];
