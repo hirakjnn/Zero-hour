@@ -165,9 +165,6 @@ function initAiFab() {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      
-      // DEBUG: Prove the event fired
-      alert("Zero Hour AI Button Clicked! Attempting to open chat...");
 
       chatWindow.classList.toggle('ai-show');
       
