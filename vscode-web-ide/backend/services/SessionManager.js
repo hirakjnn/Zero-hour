@@ -179,6 +179,8 @@ class SessionManager {
       fs.writeFileSync(path.join(vscodeDir, 'tasks.json'), JSON.stringify(tasksJson, null, 2));
     }
 
+    try { require('child_process').execSync(`chown -R 1000:1000 "${userWorkspaceDir}"`); } catch(e) {}
+
     const sessionData = {
       sessionId,
       port,
