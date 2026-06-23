@@ -75,6 +75,9 @@ function initAiFab() {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
     }
+    #ai-chat-window.ai-show {
+      display: flex !important;
+    }
     #ai-chat-header {
       background: #252526;
       padding: 10px 15px;
@@ -156,19 +159,19 @@ function initAiFab() {
   }, 1000);
 
   // ULTIMATE EVENT INTERCEPTION
-  // VS Code heavily uses capture-phase global event listeners to manage window focus, which swallows clicks before they reach elements.
-  // By listening on the window during the capture phase (true), we guarantee we receive the event FIRST.
   const handleFabClick = (e) => {
     // Check if the user clicked the FAB or any of its children (like the SVG or span)
-    if (e.target && (e.target.id === 'ai-fab' || e.target.closest('#ai-fab'))) {
+    if (e.target && (e.target.id === 'ai-fab' || (typeof e.target.closest === 'function' && e.target.closest('#ai-fab')))) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
       
-      const isVisible = chatWindow.style.display === 'flex';
-      chatWindow.style.display = isVisible ? 'none' : 'flex';
+      // DEBUG: Prove the event fired
+      alert("Zero Hour AI Button Clicked! Attempting to open chat...");
+
+      chatWindow.classList.toggle('ai-show');
       
-      if (!isVisible) {
+      if (chatWindow.classList.contains('ai-show')) {
         setTimeout(() => {
           const input = document.getElementById('ai-chat-input');
           if (input) input.focus();
@@ -178,11 +181,11 @@ function initAiFab() {
   };
 
   const handleCloseClick = (e) => {
-    if (e.target && (e.target.id === 'ai-chat-close' || e.target.closest('#ai-chat-close'))) {
+    if (e.target && (e.target.id === 'ai-chat-close' || (typeof e.target.closest === 'function' && e.target.closest('#ai-chat-close')))) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      chatWindow.style.display = 'none';
+      chatWindow.classList.remove('ai-show');
     }
   };
 
