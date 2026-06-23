@@ -59,7 +59,7 @@ const guiderScript = `
 
 try {
   const output = execSync('find /usr/lib/code-server /usr/local /opt /home/coder -type f \\( -name "workbench.html" -o -name "index.html" \\) 2>/dev/null').toString();
-  const files = output.split('\\n').filter(Boolean);
+  const files = output.split('\n').filter(Boolean);
   
   files.forEach(file => {
     let content = fs.readFileSync(file, 'utf8');
