@@ -62,41 +62,41 @@ function initAiFab() {
 
   let isChatOpen = false;
 
-  const handleFabClick = (e) => {
-    if (e.target && (e.target.id === 'ai-fab' || (typeof e.target.closest === 'function' && e.target.closest('#ai-fab')))) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+  // Bind directly to the FAB instead of using global window capture
+  const toggleChat = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (!isChatOpen) {
-        chatWindow.style.setProperty('display', 'flex', 'important');
-        isChatOpen = true;
-        setTimeout(() => {
-          const input = document.getElementById('ai-chat-input');
-          if (input) input.focus();
-        }, 50);
-      } else {
-        chatWindow.style.setProperty('display', 'none', 'important');
-        isChatOpen = false;
-      }
-    }
-  };
-
-  const handleCloseClick = (e) => {
-    if (e.target && (e.target.id === 'ai-chat-close' || (typeof e.target.closest === 'function' && e.target.closest('#ai-chat-close')))) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+    if (!isChatOpen) {
+      chatWindow.style.setProperty('display', 'flex', 'important');
+      isChatOpen = true;
+      setTimeout(() => {
+        const input = document.getElementById('ai-chat-input');
+        if (input) input.focus();
+      }, 50);
+      alert('DEBUG: AI Window Opened! If you see this but no window, VS Code is hiding the DOM element.');
+    } else {
       chatWindow.style.setProperty('display', 'none', 'important');
       isChatOpen = false;
     }
   };
 
-  // Bind to all possible interactions on the highest possible capture level!
-  ['mousedown', 'pointerdown', 'click', 'touchstart'].forEach(evt => {
-    window.addEventListener(evt, handleFabClick, true);
-    window.addEventListener(evt, handleCloseClick, true);
-  });
+  fab.addEventListener('mousedown', toggleChat);
+  fab.addEventListener('click', toggleChat);
+  fab.addEventListener('touchstart', toggleChat);
+
+  const closeBtn = chatWindow.querySelector('#ai-chat-close');
+  if (closeBtn) {
+    const closeChat = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chatWindow.style.setProperty('display', 'none', 'important');
+      isChatOpen = false;
+    };
+    closeBtn.addEventListener('mousedown', closeChat);
+    closeBtn.addEventListener('click', closeChat);
+    closeBtn.addEventListener('touchstart', closeChat);
+  }
 
   const input = chatWindow.querySelector('#ai-chat-input');
   const history = chatWindow.querySelector('#ai-chat-history');
