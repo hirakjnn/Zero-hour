@@ -1,4 +1,6 @@
-window.addEventListener('DOMContentLoaded', () => {
+function initAiFab() {
+  if (document.getElementById('ai-fab')) return; // Prevent double initialization
+
   // 1. Hide the annoying 'insecure context' popup
   setInterval(() => {
     document.querySelectorAll('.notification-toast').forEach(toast => {
@@ -141,14 +143,16 @@ window.addEventListener('DOMContentLoaded', () => {
   document.body.appendChild(fab);
   document.body.appendChild(chatWindow);
 
-  fab.addEventListener('click', () => {
+  fab.addEventListener('click', (e) => {
+    e.stopPropagation();
     chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
     if (chatWindow.style.display === 'flex') {
       document.getElementById('ai-chat-input').focus();
     }
   });
 
-  document.getElementById('ai-chat-close').addEventListener('click', () => {
+  document.getElementById('ai-chat-close').addEventListener('click', (e) => {
+    e.stopPropagation();
     chatWindow.style.display = 'none';
   });
 
@@ -227,4 +231,10 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initAiFab);
+} else {
+  initAiFab();
+}
