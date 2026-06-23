@@ -10,13 +10,14 @@ function initAiFab() {
     });
   }, 1000);
 
-  // 2. Create the LLM Floating Action Button
+  // 2. Create the LLM Action Button for the Titlebar
   const fab = document.createElement('div');
   fab.id = 'ai-fab';
   fab.innerHTML = `
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
+    <span>Ask AI</span>
   `;
   
   const chatWindow = document.createElement('div');
@@ -38,38 +39,39 @@ function initAiFab() {
   const style = document.createElement('style');
   style.innerHTML = `
     #ai-fab {
-      position: fixed;
-      bottom: 40px;
-      right: 40px;
-      width: 50px;
-      height: 50px;
-      background: #007acc;
-      color: white;
-      border-radius: 50%;
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 6px;
+      padding: 0 10px;
+      height: 24px;
+      background: #007acc;
+      color: white;
+      border-radius: 4px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      font-size: 12px;
+      margin-left: 10px;
+      opacity: 0.9;
+      pointer-events: auto !important;
       z-index: 999999;
-      transition: transform 0.2s;
     }
     #ai-fab:hover {
-      transform: scale(1.1);
+      opacity: 1;
+      background: #0098ff;
     }
     #ai-chat-window {
-      position: fixed;
-      bottom: 100px;
-      right: 40px;
-      width: 320px;
-      height: 400px;
+      position: absolute;
+      top: 45px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 450px;
       background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 8px;
+      border: 1px solid #444;
+      border-radius: 6px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.7);
       display: none;
       flex-direction: column;
-      z-index: 999999;
+      z-index: 99999999;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
     }
@@ -141,23 +143,35 @@ function initAiFab() {
   `;
 
   document.head.appendChild(style);
-  document.body.appendChild(fab);
   document.body.appendChild(chatWindow);
 
-  fab.addEventListener('mousedown', (e) => {
-    e.stopPropagation();
+  // Inject into Titlebar Center (next to the search command center)
+  const injectTimer = setInterval(() => {
+    // Attempt to find the center titlebar where the search window lives
+    const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
+    if (titleCenter && !document.getElementById('ai-fab')) {
+      titleCenter.appendChild(fab);
+      clearInterval(injectTimer);
+    }
+  }, 1000);
+
+  // Use raw onclick to forcefully capture the event at the highest level
+  fab.onclick = function(e) {
     e.preventDefault();
+    e.stopPropagation();
     chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
     if (chatWindow.style.display === 'flex') {
       setTimeout(() => document.getElementById('ai-chat-input').focus(), 50);
     }
-  });
+    return false;
+  };
 
-  document.getElementById('ai-chat-close').addEventListener('mousedown', (e) => {
-    e.stopPropagation();
+  document.getElementById('ai-chat-close').onclick = function(e) {
     e.preventDefault();
+    e.stopPropagation();
     chatWindow.style.display = 'none';
-  });
+    return false;
+  };
 
   const input = document.getElementById('ai-chat-input');
   const history = document.getElementById('ai-chat-history');
