@@ -21,6 +21,7 @@ function initAiFab() {
   
   const chatWindow = document.createElement('div');
   chatWindow.id = 'ai-chat-window';
+  chatWindow.style.display = 'none'; // explicitly initialize inline style
   chatWindow.innerHTML = `
     <div id="ai-chat-header">
       <strong>Zero Hour AI</strong>
@@ -143,16 +144,18 @@ function initAiFab() {
   document.body.appendChild(fab);
   document.body.appendChild(chatWindow);
 
-  fab.addEventListener('click', (e) => {
+  fab.addEventListener('mousedown', (e) => {
     e.stopPropagation();
+    e.preventDefault();
     chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
     if (chatWindow.style.display === 'flex') {
-      document.getElementById('ai-chat-input').focus();
+      setTimeout(() => document.getElementById('ai-chat-input').focus(), 50);
     }
   });
 
-  document.getElementById('ai-chat-close').addEventListener('click', (e) => {
+  document.getElementById('ai-chat-close').addEventListener('mousedown', (e) => {
     e.stopPropagation();
+    e.preventDefault();
     chatWindow.style.display = 'none';
   });
 
