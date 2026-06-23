@@ -39,9 +39,18 @@ function initAiFab() {
   const chatIframe = document.createElement('iframe');
   chatIframe.id = 'ai-chat-iframe';
   chatIframe.src = '/ai-chat';
-  chatIframe.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: none !important; background: #1e1e1e !important;";
+  chatIframe.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: block !important; background: #1e1e1e !important;";
 
-  let isChatOpen = false;
+  // Inject the iframe immediately so we can see if it even renders
+  const injectIframeTimer = setInterval(() => {
+    const workbench = document.querySelector('.monaco-workbench') || document.body;
+    if (workbench && !document.getElementById('ai-chat-iframe')) {
+      workbench.appendChild(chatIframe);
+      clearInterval(injectIframeTimer);
+    }
+  }, 1000);
+
+  let isChatOpen = true;
 
   const toggleChat = (e) => {
     e.preventDefault();
