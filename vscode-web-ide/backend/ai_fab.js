@@ -155,23 +155,42 @@ function initAiFab() {
     }
   }, 1000);
 
-  // Use raw onclick to forcefully capture the event at the highest level
-  fab.onclick = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
-    if (chatWindow.style.display === 'flex') {
-      setTimeout(() => document.getElementById('ai-chat-input').focus(), 50);
+  // ULTIMATE EVENT INTERCEPTION
+  // VS Code heavily uses capture-phase global event listeners to manage window focus, which swallows clicks before they reach elements.
+  // By listening on the window during the capture phase (true), we guarantee we receive the event FIRST.
+  const handleFabClick = (e) => {
+    // Check if the user clicked the FAB or any of its children (like the SVG or span)
+    if (e.target && (e.target.id === 'ai-fab' || e.target.closest('#ai-fab'))) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      
+      const isVisible = chatWindow.style.display === 'flex';
+      chatWindow.style.display = isVisible ? 'none' : 'flex';
+      
+      if (!isVisible) {
+        setTimeout(() => {
+          const input = document.getElementById('ai-chat-input');
+          if (input) input.focus();
+        }, 50);
+      }
     }
-    return false;
   };
 
-  document.getElementById('ai-chat-close').onclick = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    chatWindow.style.display = 'none';
-    return false;
+  const handleCloseClick = (e) => {
+    if (e.target && (e.target.id === 'ai-chat-close' || e.target.closest('#ai-chat-close'))) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      chatWindow.style.display = 'none';
+    }
   };
+
+  // Bind to all possible interactions on the highest possible capture level!
+  ['mousedown', 'pointerdown', 'click', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, handleFabClick, true);
+    window.addEventListener(evt, handleCloseClick, true);
+  });
 
   const input = document.getElementById('ai-chat-input');
   const history = document.getElementById('ai-chat-history');
