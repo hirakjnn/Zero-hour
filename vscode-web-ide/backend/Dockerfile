@@ -22,7 +22,7 @@ RUN npm install -g opencode-ai
 RUN mkdir -p /home/coder/.local/share/code-server/User \
     && mkdir -p /home/coder/.local/share/code-server/extensions \
     && mkdir -p /home/coder/.local/share/opencode \
-    && echo '{"workbench.startupEditor":"none","workbench.activityBar.visible":true,"workbench.panel.opensMaximized":"always","task.allowAutomaticTasks":"on","security.workspace.trust.enabled":false,"security.workspace.trust.startupPrompt":"never","workbench.editor.empty.hint":"hidden","workbench.tips.enabled":false,"workbench.layoutControl.enabled":false,"workbench.parts.auxiliarybar.hidden":true,"chat.disableAIFeatures":true,"chat.editor.enable":false,"chat.commandCenter.enabled":false,"github.copilot.enable":false}' > /home/coder/.local/share/code-server/User/settings.json \
+    && echo '{"workbench.colorTheme":"Default Dark Modern","workbench.iconTheme":"vs-seti","workbench.startupEditor":"none","workbench.activityBar.visible":true,"workbench.panel.opensMaximized":"always","task.allowAutomaticTasks":"on","security.workspace.trust.enabled":false,"security.workspace.trust.startupPrompt":"never","workbench.editor.empty.hint":"hidden","workbench.tips.enabled":false,"workbench.layoutControl.enabled":false,"workbench.parts.auxiliarybar.hidden":true,"chat.disableAIFeatures":true,"chat.editor.enable":false,"chat.commandCenter.enabled":false,"github.copilot.enable":false}' > /home/coder/.local/share/code-server/User/settings.json \
     && chown -R coder:coder /home/coder/.local
 
 # Nuclear CSS Injection: Forcefully hide the Auxiliary Bar, all Chat UI elements, and the Extensions tab
