@@ -20,26 +20,6 @@ function initAiFab() {
     <span>Ask AI</span>
   `;
   
-  const dialog = document.createElement('dialog');
-  dialog.id = 'ai-chat-window';
-  dialog.style.cssText = "width: 400px !important; height: 450px !important; background: #1e1e1e !important; border: 1px solid #444 !important; border-radius: 6px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.7) !important; padding: 0 !important; margin: auto !important; margin-top: 45px !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; overflow: hidden !important; color: #ccc !important;";
-  
-  // Using an inner wrapper to act as the flex container since dialog[open] inline styles can be tricky
-  dialog.innerHTML = `
-    <div id="ai-chat-wrapper" style="display: flex !important; flex-direction: column !important; height: 100% !important; width: 100% !important;">
-      <div id="ai-chat-header" style="background: #252526 !important; padding: 10px 15px !important; border-bottom: 1px solid #333 !important; display: flex !important; justify-content: space-between !important; align-items: center !important; color: #ddd !important; font-size: 14px !important;">
-        <strong>Zero Hour AI</strong>
-        <button id="ai-chat-close" style="background: none !important; border: none !important; color: #aaa !important; font-size: 18px !important; cursor: pointer !important;">×</button>
-      </div>
-      <div id="ai-chat-history" style="flex: 1 !important; padding: 15px !important; overflow-y: auto !important; display: flex !important; flex-direction: column !important; gap: 10px !important; font-size: 13px !important; color: #ccc !important;">
-        <div class="ai-msg" style="background: #2d2d2d !important; padding: 8px 12px !important; border-radius: 6px !important; align-self: flex-start !important; max-width: 85% !important; line-height: 1.4 !important;">Hi! I am the Zero Hour AI. How can I help you with this challenge?</div>
-      </div>
-      <div id="ai-chat-input-container" style="padding: 10px !important; border-top: 1px solid #333 !important; background: #252526 !important;">
-        <input type="text" id="ai-chat-input" placeholder="Ask about the problem..." style="width: 100% !important; padding: 8px 10px !important; background: #3c3c3c !important; border: 1px solid #555 !important; border-radius: 4px !important; color: white !important; outline: none !important; box-sizing: border-box !important;" />
-      </div>
-    </div>
-  `;
-
   // Rebuild the floating Chat UI as a standard DIV, fully styled inline to bypass CSP <style> tag blocking
   const chatWindow = document.createElement('div');
   chatWindow.id = 'ai-chat-window';
@@ -80,20 +60,24 @@ function initAiFab() {
     }
   }, 1000);
 
+  let isChatOpen = false;
+
   const handleFabClick = (e) => {
     if (e.target && (e.target.id === 'ai-fab' || (typeof e.target.closest === 'function' && e.target.closest('#ai-fab')))) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      if (chatWindow.style.getPropertyValue('display') === 'none') {
+      if (!isChatOpen) {
         chatWindow.style.setProperty('display', 'flex', 'important');
+        isChatOpen = true;
         setTimeout(() => {
           const input = document.getElementById('ai-chat-input');
           if (input) input.focus();
         }, 50);
       } else {
         chatWindow.style.setProperty('display', 'none', 'important');
+        isChatOpen = false;
       }
     }
   };
@@ -104,6 +88,7 @@ function initAiFab() {
       e.stopPropagation();
       e.stopImmediatePropagation();
       chatWindow.style.setProperty('display', 'none', 'important');
+      isChatOpen = false;
     }
   };
 
