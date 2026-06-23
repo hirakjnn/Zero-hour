@@ -44,18 +44,15 @@ function initAiFab() {
   fab.onmouseenter = () => fab.style.opacity = '1';
   fab.onmouseleave = () => fab.style.opacity = '0.9';
 
-  // Inject into Body safely
-  setInterval(() => {
-    if (!document.getElementById('ai-chat-window')) {
-      document.body.appendChild(chatWindow);
-    }
-  }, 1000);
-
   // Inject into Titlebar Center (next to the search command center)
   const injectTimer = setInterval(() => {
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
     if (titleCenter && !document.getElementById('ai-fab')) {
+      // Ensure titleCenter can act as a positioning anchor if needed
+      titleCenter.style.setProperty('position', 'relative', 'important');
+      
       titleCenter.appendChild(fab);
+      titleCenter.appendChild(chatWindow); // INJECT CHAT WINDOW HERE INSTEAD OF BODY!
       clearInterval(injectTimer);
     }
   }, 1000);
@@ -68,6 +65,12 @@ function initAiFab() {
     e.stopPropagation();
 
     if (!isChatOpen) {
+      // Make sure it is still inside titleCenter in case of weird resets
+      const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
+      if (titleCenter && chatWindow.parentNode !== titleCenter) {
+        titleCenter.appendChild(chatWindow);
+      }
+      
       chatWindow.style.setProperty('display', 'flex', 'important');
       isChatOpen = true;
       setTimeout(() => {
