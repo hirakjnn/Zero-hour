@@ -156,27 +156,6 @@ class SessionManager {
           "workbench.panel.opensMaximized": "always"
       };
       fs.writeFileSync(path.join(vscodeDir, 'settings.json'), JSON.stringify(settingsJson, null, 2));
-
-      const tasksJson = {
-          "version": "2.0.0",
-          "tasks": [
-              {
-                  "label": "OpenCode AI Assistant",
-                  "type": "shell",
-                  "command": "unset TERM_PROGRAM && unset VSCODE_IPC_HOOK_CLI && opencode || sleep 600",
-                  "presentation": {
-                      "reveal": "always",
-                      "panel": "new",
-                      "focus": true,
-                      "clear": true
-                  },
-                  "runOptions": {
-                      "runOn": "folderOpen"
-                  }
-              }
-          ]
-      };
-      fs.writeFileSync(path.join(vscodeDir, 'tasks.json'), JSON.stringify(tasksJson, null, 2));
     }
 
     try { require('child_process').execSync(`chown -R 1000:1000 "${userWorkspaceDir}"`); } catch(e) {}
