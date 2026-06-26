@@ -13,6 +13,47 @@ function initAiFab() {
     <span>Ask AI</span>
   `;
   
+  const submitBtn = document.createElement("div");
+  submitBtn.id = "ai-submit-btn";
+  submitBtn.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 0 5px !important; padding: 4px 12px !important; background: #28a745 !important; color: white !important; font-family: sans-serif !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px !important; cursor: pointer !important; pointer-events: auto !important; position: relative !important; z-index: 2147483647 !important; transition: background 0.2s;";
+  submitBtn.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span>Submit</span>
+  `;
+
+  submitBtn.onclick = async () => {
+    if (!confirm("Are you sure you want to submit your code? This will end your session.")) return;
+    
+    submitBtn.innerHTML = "<span>Grading...</span>";
+    submitBtn.style.background = "#666";
+    submitBtn.style.pointerEvents = "none";
+    
+    try {
+        const sessionId = window.location.pathname.split("/ide/")[1]?.replace(/\/$/, "");
+        const res = await fetch("/api/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId })
+        });
+        
+        if (res.ok) {
+            window.top.location.href = \`https://zero-hour-ai.vercel.app/results?sessionId=\${sessionId}\`;
+        } else {
+            alert("Submission failed. Please try again.");
+            submitBtn.innerHTML = "<span>Submit</span>";
+            submitBtn.style.background = "#28a745";
+            submitBtn.style.pointerEvents = "auto";
+        }
+    } catch(err) {
+        alert("Network error during submission.");
+        submitBtn.innerHTML = "<span>Submit</span>";
+        submitBtn.style.background = "#28a745";
+        submitBtn.style.pointerEvents = "auto";
+    }
+  };
+  
   const timerDiv = document.createElement("div");
   timerDiv.id = "ai-timer";
   timerDiv.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; margin: 0 5px !important; padding: 4px 12px !important; background: #333 !important; color: #ffcc00 !important; font-family: monospace !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px !important; border: 1px solid #555 !important; z-index: 2147483647 !important;";
@@ -43,6 +84,7 @@ function initAiFab() {
     const titleCenter = document.querySelector(".titlebar-center") || document.querySelector(".part.titlebar");
     if (titleCenter && !document.getElementById("ai-fab")) {
       titleCenter.appendChild(timerDiv);
+      titleCenter.appendChild(submitBtn);
       titleCenter.appendChild(fab);
       clearInterval(injectTimer);
     }

@@ -4,12 +4,24 @@ const sessionManager = require('../services/SessionManager');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
-const { Pool } = require('pg');
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 
-const pool = process.env.DATABASE_URL ? new Pool({ 
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // Required for AWS RDS
-}) : null;
+const bedrock = new BedrockRuntimeClient({ region: 'us-east-1' }); // Default or fallback region
+const ddbClient = new DynamoDBClient({ region: 'us-east-1' });
+const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
+
+const SYSTEM_PROMPT = `You are a strict, expert AI code evaluator.
+You are evaluating a candidate's submitted code for a technical interview challenge.
+You will be provided with the 'git diff' of their changes.
+
+You must evaluate their changes and return ONLY a valid JSON object matching this exact schema, with no markdown formatting or extra text:
+{
+  "score": <number between 0 and 100>,
+  "feedback": "<A concise, 2-3 sentence feedback on their approach. What did they do right? What did they miss?>",
+  "fixed": <boolean, true if they successfully solved the core bug/feature, false otherwise>
+}`;
 
 router.post('/', async (req, res) => {
     try {
@@ -32,51 +44,85 @@ router.post('/', async (req, res) => {
         let diffOutput = '';
         try {
             const { stdout } = await execPromise(`docker exec ${containerName} git diff`);
-            diffOutput = stdout;
+            diffOutput = stdout || "No changes made.";
         } catch (err) {
             console.error('Failed to get git diff:', err);
             diffOutput = 'Error retrieving diff or no git repository found.';
         }
 
-        // Run docker exec to grab .opencode/sessions log file
-        let sessionLogs = '';
-        try {
-            const { stdout } = await execPromise(`docker exec ${containerName} cat /home/coder/project/.opencode/sessions`);
-            sessionLogs = stdout;
-        } catch (err) {
-            console.error('Failed to get session logs:', err);
-            sessionLogs = 'Error retrieving session logs or file not found.';
-        }
-
-        // TODO: Call AWS Bedrock LLM with diffOutput and sessionLogs
-        // Mock response for now
-        const mockScorecard = {
-            score: 95,
-            feedback: "Great job! You found the bug and fixed it correctly.",
-            details: {
-                diffLength: diffOutput.length,
-                logsRead: sessionLogs.length > 0
-            }
+        // Call AWS Bedrock Llama 3 LLM
+        let scorecard = {
+            score: 0,
+            feedback: "Evaluation failed to run.",
+            fixed: false
         };
 
-        // Save to AWS RDS Database if configured
-        if (pool) {
-            try {
-                // We store the session ID, and the JSON scorecard
-                await pool.query(
-                    `INSERT INTO evaluations (session_id, score, scorecard, created_at)
-                     VALUES ($1, $2, $3, NOW())`,
-                    [sessionId, mockScorecard.score, JSON.stringify(mockScorecard)]
-                );
-                console.log('[DB Sync] Saved scorecard to AWS RDS Database.');
-            } catch (dbErr) {
-                console.error('[DB Sync] Failed to save to database. Note: ensure the evaluations table exists!', dbErr);
+        try {
+            const prompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${SYSTEM_PROMPT}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHere is the candidate's git diff:\n\n\`\`\`diff\n${diffOutput}\n\`\`\`\n\nEvaluate this diff and return ONLY the JSON object.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n{`;
+            
+            const command = new InvokeModelCommand({
+                modelId: 'meta.llama3-70b-instruct-v1:0', // Llama 3 70B Instruct
+                contentType: 'application/json',
+                accept: 'application/json',
+                body: JSON.stringify({
+                    prompt: prompt,
+                    max_gen_len: 512,
+                    temperature: 0.1,
+                    top_p: 0.9
+                })
+            });
+
+            const response = await bedrock.send(command);
+            const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+            let generation = responseBody.generation;
+
+            // Clean up the output to ensure it's valid JSON
+            // We started the prompt with `{`, so we might need to prepend it if Llama didn't include it.
+            if (!generation.trim().startsWith('{')) {
+                generation = '{' + generation;
             }
-        } else {
-            console.warn('[DB Sync] DATABASE_URL not set. Skipping Database Sync.');
+            
+            // Strip any trailing text after the closing brace
+            const lastBraceIndex = generation.lastIndexOf('}');
+            if (lastBraceIndex !== -1) {
+                generation = generation.substring(0, lastBraceIndex + 1);
+            }
+
+            scorecard = JSON.parse(generation);
+        } catch (llmErr) {
+            console.error('[Submit] Bedrock evaluation failed:', llmErr);
+            scorecard.feedback = "AWS Bedrock evaluation failed. Returning default scorecard.";
         }
 
-        res.json({ success: true, scorecard: mockScorecard });
+        // Add diff length for stats
+        scorecard.details = { diffLength: diffOutput.length };
+
+        // Save to AWS DynamoDB
+        try {
+            await ddbDocClient.send(new PutCommand({
+                TableName: 'ZeroHour_Evaluations',
+                Item: {
+                    sessionId: sessionId,
+                    score: scorecard.score,
+                    feedback: scorecard.feedback,
+                    fixed: scorecard.fixed,
+                    diffLength: scorecard.details.diffLength,
+                    createdAt: new Date().toISOString()
+                }
+            }));
+            console.log('[DB Sync] Saved scorecard to DynamoDB ZeroHour_Evaluations.');
+        } catch (dbErr) {
+            console.error('[DB Sync] Failed to save to DynamoDB. Note: ensure ZeroHour_Evaluations table exists!', dbErr);
+        }
+
+        // Destroy the Docker session completely
+        try {
+            await sessionManager.destroySession(sessionId);
+        } catch(err) {
+            console.error('[Submit] Failed to destroy session:', err);
+        }
+
+        res.json({ success: true, scorecard });
     } catch (e) {
         console.error('Submit error:', e);
         res.status(500).json({ error: 'Failed to process submission' });

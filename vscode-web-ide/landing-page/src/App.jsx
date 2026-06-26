@@ -3,6 +3,7 @@ import { Home } from './pages/Home';
 import { Challenges } from './pages/Challenges';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
+import { Results } from './pages/Results';
 import { useState, useEffect } from 'react';
 import { Code2 } from 'lucide-react';
 
@@ -64,6 +65,7 @@ function App() {
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/auth" element={<Auth setUser={setUser} />} />
         <Route path="/dashboard" element={<Dashboard user={user} />} />
+        <Route path="/results" element={<Results user={user} />} />
       </Routes>
     </BrowserRouter>
   );

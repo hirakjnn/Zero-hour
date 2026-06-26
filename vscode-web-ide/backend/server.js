@@ -11,6 +11,7 @@ const executeRouter = require('./routes/execute');
 const aiRouter = require('./routes/ai');
 const sessionRouter = require('./routes/session');
 const submitRouter = require('./routes/submit');
+const evaluationsRouter = require('./routes/evaluations');
 const authRouter = require('./routes/auth');
 const sessionManager = require('./services/SessionManager');
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -317,6 +318,7 @@ app.use('/api/files', filesRouter);
 app.use('/api/execute', executeRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/submit', submitRouter);
+app.use('/api/evaluations', evaluationsRouter);
 app.use('/api/auth', authRouter);
 
 // Health check
