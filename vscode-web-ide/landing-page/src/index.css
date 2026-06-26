@@ -113,13 +113,18 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border-color);
   background: rgba(10, 10, 10, 0.85);
   backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+.navbar .btn {
+  padding: 6px 14px;
+  font-size: 13px;
 }
 
 .nav-brand {
