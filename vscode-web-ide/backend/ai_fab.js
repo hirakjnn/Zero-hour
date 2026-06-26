@@ -74,9 +74,6 @@ function initAiFab() {
       <button id="ai-chat-close-btn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">&times;</button>
     </div>
     <div id="ai-chat-history" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
-      <div style="background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4;">
-        Welcome to the War Room. I am your AI Mentor. Describe the problem you are facing, and I will guide you to a solution without writing the code for you.
-      </div>
     </div>
     <div style="padding: 15px; background: #252526; border-top: 1px solid #333;">
       <input type="text" id="ai-chat-input" placeholder="Ask AI a question..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: #3c3c3c; border: 1px solid #555; color: #fff; border-radius: 6px; outline: none;">
@@ -99,88 +96,101 @@ function initAiFab() {
         isChatOpen = false;
       };
 
-      input.addEventListener('keydown', async (e) => {
+      input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && input.value.trim() !== '') {
-          const text = input.value.trim();
-          input.value = '';
-          input.disabled = true;
-
-          const userDiv = document.createElement('div');
-          userDiv.style.cssText = "background: #007acc; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 85%; color: white; line-height: 1.4;";
-          userDiv.textContent = text;
-          history.appendChild(userDiv);
-          history.scrollTop = history.scrollHeight;
-          messageHistory.push({ role: 'user', content: text });
-
-          const aiDiv = document.createElement('div');
-          aiDiv.style.cssText = "background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4;";
-          aiDiv.textContent = '...';
-          history.appendChild(aiDiv);
-          history.scrollTop = history.scrollHeight;
-
-          // Attempt to extract live context from the VS Code editor DOM
-          let currentCodeContext = "No file currently focused.";
-          try {
-            const editorLines = document.querySelector('.monaco-editor .view-lines');
-            if (editorLines) {
-               currentCodeContext = editorLines.innerText || "Empty file.";
-            }
-          } catch(err) {}
-
-          try {
-            const res = await fetch('/api/ai/chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                message: text, 
-                history: messageHistory,
-                code: currentCodeContext // Inject live context so the AI "knows what the user is doing"
-              })
-            });
-
-            if (!res.ok) throw new Error('Network error');
-
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            aiDiv.textContent = '';
-            let fullAiResponse = '';
-
-            while (true) {
-              const { value, done } = await reader.read();
-              if (done) break;
-              const chunk = decoder.decode(value);
-              const lines = chunk.split('\n');
-              for (const line of lines) {
-                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-                  try {
-                    const data = JSON.parse(line.replace('data: ', ''));
-                    if (data.text) {
-                      aiDiv.textContent += data.text;
-                      fullAiResponse += data.text;
-                      history.scrollTop = history.scrollHeight;
-                    }
-                  } catch(err) {}
-                }
-              }
-            }
-            messageHistory.push({ role: 'assistant', content: fullAiResponse });
-          } catch (error) {
-            aiDiv.textContent = 'Connection failed. Ensure the backend is running.';
-          } finally {
-            input.disabled = false;
-            input.focus();
-          }
+          triggerAI(input.value.trim());
         }
       });
     }
   }, 1000);
 
   let isChatOpen = false;
+  let hasTriggeredInitialAnalysis = false;
+
+  const triggerAI = async (text) => {
+    const input = chatContainer.querySelector('#ai-chat-input');
+    const history = chatContainer.querySelector('#ai-chat-history');
+    
+    input.value = '';
+    input.disabled = true;
+
+    if (text) {
+      const userDiv = document.createElement('div');
+      userDiv.style.cssText = "background: #007acc; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 85%; color: white; line-height: 1.4;";
+      userDiv.textContent = text;
+      history.appendChild(userDiv);
+      history.scrollTop = history.scrollHeight;
+      messageHistory.push({ role: 'user', content: text });
+    }
+
+    const aiDiv = document.createElement('div');
+    aiDiv.style.cssText = "background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4;";
+    aiDiv.textContent = '...';
+    history.appendChild(aiDiv);
+    history.scrollTop = history.scrollHeight;
+
+    let currentCodeContext = "No file currently focused.";
+    try {
+      const editorLines = document.querySelector('.monaco-editor .view-lines');
+      if (editorLines) {
+          currentCodeContext = editorLines.innerText || "Empty file.";
+      }
+    } catch(err) {}
+
+    try {
+      const payloadMessage = text || "Please analyze my current code and give me a hint about what I should do next.";
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: payloadMessage, 
+          history: messageHistory,
+          code: currentCodeContext
+        })
+      });
+
+      if (!res.ok) throw new Error('Network error');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      aiDiv.textContent = '';
+      let fullAiResponse = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+            try {
+              const data = JSON.parse(line.replace('data: ', ''));
+              if (data.text) {
+                aiDiv.textContent += data.text;
+                fullAiResponse += data.text;
+                history.scrollTop = history.scrollHeight;
+              }
+            } catch(err) {}
+          }
+        }
+      }
+      messageHistory.push({ role: 'assistant', content: fullAiResponse });
+    } catch (error) {
+      aiDiv.textContent = 'Connection failed. Ensure the backend is running.';
+    } finally {
+      input.disabled = false;
+      input.focus();
+    }
+  };
 
   const toggleChat = () => {
     if (!isChatOpen) {
       chatContainer.style.setProperty('display', 'flex', 'important');
       isChatOpen = true;
+      if (!hasTriggeredInitialAnalysis) {
+        hasTriggeredInitialAnalysis = true;
+        triggerAI(""); // Auto trigger analysis!
+      }
     } else {
       chatContainer.style.setProperty('display', 'none', 'important');
       isChatOpen = false;
