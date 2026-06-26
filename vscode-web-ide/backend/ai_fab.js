@@ -25,10 +25,29 @@ function initAiFab() {
   fab.onmouseenter = () => fab.style.opacity = '1';
   fab.onmouseleave = () => fab.style.opacity = '0.9';
 
-  // Inject into Titlebar Center
+  // Inject into Titlebar Center along with a 1-hour Timer
   const injectTimer = setInterval(() => {
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
     if (titleCenter && !document.getElementById('ai-fab')) {
+      // Create Timer Element
+      const timerDiv = document.createElement('div');
+      timerDiv.id = 'session-timer';
+      timerDiv.style.cssText = "color: #ff5555; font-family: monospace; font-size: 14px; margin-right: 15px; display: flex; align-items: center; font-weight: bold;";
+      
+      let timeLeft = 3600; // 1 hour
+      setInterval(() => {
+        timeLeft--;
+        if(timeLeft < 0) {
+          timerDiv.innerText = "00:00";
+          timerDiv.style.color = "red";
+          return;
+        }
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        timerDiv.innerText = `${m}:${s} left`;
+      }, 1000);
+
+      titleCenter.appendChild(timerDiv);
       titleCenter.appendChild(fab);
       clearInterval(injectTimer);
     }
@@ -38,10 +57,11 @@ function initAiFab() {
   // Using an iframe perfectly isolates our Chat UI from VS Code's aggressive CSS/DOM sandbox
   const chatIframe = document.createElement('iframe');
   chatIframe.id = 'ai-chat-iframe';
-  chatIframe.src = '/ai-chat';
-  chatIframe.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: block !important; background: #1e1e1e !important;";
+  // Use absolute URL to bypass code-server's <base> tag which was causing 404s (the 'dead screen')
+  chatIframe.src = window.location.origin + '/ai-chat';
+  chatIframe.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: none !important; background: #1e1e1e !important;";
 
-  // Inject the iframe immediately so we can see if it even renders
+  // Inject the iframe immediately but hidden
   const injectIframeTimer = setInterval(() => {
     const workbench = document.querySelector('.monaco-workbench') || document.body;
     if (workbench && !document.getElementById('ai-chat-iframe')) {
@@ -50,7 +70,7 @@ function initAiFab() {
     }
   }, 1000);
 
-  let isChatOpen = true;
+  let isChatOpen = false;
 
   const toggleChat = (e) => {
     e.preventDefault();
