@@ -149,7 +149,7 @@ function initAiFab() {
               const { value, done } = await reader.read();
               if (done) break;
               const chunk = decoder.decode(value);
-              const lines = chunk.split('\\n');
+              const lines = chunk.split('\n');
               for (const line of lines) {
                 if (line.startsWith('data: ') && !line.includes('[DONE]')) {
                   try {
