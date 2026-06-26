@@ -29,14 +29,20 @@ function initAiFab() {
   const injectTimer = setInterval(() => {
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
     if (titleCenter && !document.getElementById('ai-fab')) {
-      // Create Timer Element
+      // Create Timer Element that persists across reloads using sessionStorage
       const timerDiv = document.createElement('div');
       timerDiv.id = 'session-timer';
       timerDiv.style.cssText = "color: #ff5555; font-family: monospace; font-size: 14px; margin-right: 15px; display: flex; align-items: center; font-weight: bold;";
       
-      let timeLeft = 3600; // 1 hour
+      const timerKey = 'zero_hour_session_end';
+      let endTime = sessionStorage.getItem(timerKey);
+      if (!endTime) {
+        endTime = Date.now() + 3600 * 1000; // 1 hour from now
+        sessionStorage.setItem(timerKey, endTime);
+      }
+
       setInterval(() => {
-        timeLeft--;
+        const timeLeft = Math.floor((endTime - Date.now()) / 1000);
         if(timeLeft < 0) {
           timerDiv.innerText = "00:00";
           timerDiv.style.color = "red";
@@ -90,7 +96,9 @@ function initAiFab() {
     }
   };
 
-  fab.addEventListener('click', toggleChat);
+  // VS Code's titlebar is a draggable region that aggressively swallows 'click' events.
+  // We MUST use 'mousedown' with { capture: true } to intercept it before VS Code stops propagation!
+  fab.addEventListener('mousedown', toggleChat, true);
 
   // Allow the iframe to close itself if it wants to communicate via postMessage
   window.addEventListener('message', (event) => {
