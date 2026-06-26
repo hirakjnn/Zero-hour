@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from "jwt-decode";
 
 export function Auth({ setUser }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -7,25 +9,55 @@ export function Auth({ setUser }) {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credentialResponse.credential })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+        navigate('/dashboard');
+      } else {
+        console.error('Google Auth Failed on Backend:', data.error);
+      }
+    } catch (err) {
+      console.error('Failed to communicate with backend', err);
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error('Google Login Failed');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       
-      // Real API integration would go here using fetch/axios to EC2 backend
-      // const res = await fetch(`http://localhost:5000${endpoint}`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password })
-      // });
-      
-      // Mocking AWS DB Auth for UI purposes
-      setTimeout(() => {
-        localStorage.setItem('token', 'mock_jwt_token_123');
-        setUser({ email });
-        navigate('/dashboard');
-      }, 500);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
 
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        // Map user data
+        const userObj = data.user.name ? data.user : { ...data.user, name: data.user.email.split('@')[0] };
+        localStorage.setItem('user', JSON.stringify(userObj));
+        setUser(userObj);
+        navigate('/dashboard');
+      } else {
+        console.error('Auth Error:', data.error);
+        alert(data.error || 'Authentication failed');
+      }
     } catch (err) {
       console.error(err);
     }
@@ -38,6 +70,24 @@ export function Auth({ setUser }) {
         <p className="auth-subtitle">
           {isLogin ? 'Sign in to access your assessments.' : 'Register to start your technical evaluation.'}
         </p>
+
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '24px 0' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="filled_black"
+            shape="rectangular"
+            size="large"
+            text={isLogin ? "signin_with" : "signup_with"}
+            width="100%"
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', opacity: 0.5 }}>
+          <div style={{ flex: 1, height: '1px', background: '#fff' }}></div>
+          <span style={{ margin: '0 12px', fontSize: '12px', letterSpacing: '0.1em' }}>OR</span>
+          <div style={{ flex: 1, height: '1px', background: '#fff' }}></div>
+        </div>
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -64,7 +114,7 @@ export function Auth({ setUser }) {
           </div>
           
           <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', marginTop: '10px' }}>
-            {isLogin ? 'Sign In' : 'Register'}
+            {isLogin ? 'Sign In with Email' : 'Register with Email'}
           </button>
         </form>
         
