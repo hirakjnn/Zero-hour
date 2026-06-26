@@ -20,8 +20,8 @@ function initAiFab() {
     <span>Ask AI</span>
   `;
 
-  // Apply FAB styling directly inline
-  fab.style.cssText = "display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 10px !important; height: 24px !important; background: #007acc !important; color: white !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; margin-left: 10px !important; opacity: 0.9 !important; pointer-events: auto !important; z-index: 999999 !important;";
+  // Apply FAB styling directly inline with extreme z-index and explicit positioning
+  fab.style.cssText = "display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 10px !important; height: 24px !important; background: #007acc !important; color: white !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; margin-left: 10px !important; opacity: 0.9 !important; pointer-events: auto !important; position: relative !important; z-index: 2147483647 !important;";
   fab.onmouseenter = () => fab.style.opacity = '1';
   fab.onmouseleave = () => fab.style.opacity = '0.9';
 
@@ -164,10 +164,7 @@ function initAiFab() {
 
   let isChatOpen = false;
 
-  const toggleChat = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  const toggleChat = () => {
     if (!isChatOpen) {
       chatContainer.style.setProperty('display', 'flex', 'important');
       isChatOpen = true;
@@ -177,9 +174,18 @@ function initAiFab() {
     }
   };
 
-  // VS Code's titlebar is a draggable region that aggressively swallows 'click' events.
-  // We MUST use 'mousedown' with { capture: true } to intercept it before VS Code stops propagation!
-  fab.addEventListener('mousedown', toggleChat, true);
+  // The CORE FIX: VS Code's titlebar is a draggable region that uses window-level or 
+  // container-level capture listeners to aggressively swallow events for dragging.
+  // We MUST attach our listener to the very top (window) during the capture phase
+  // so we intercept it BEFORE VS Code's layout engines can stop propagation!
+  window.addEventListener('mousedown', (e) => {
+    const fabTarget = e.target.closest('#ai-fab');
+    if (fabTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleChat();
+    }
+  }, true);
 }
 
 if (document.readyState === 'loading') {
