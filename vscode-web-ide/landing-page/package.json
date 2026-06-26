@@ -10,7 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1075.0",
+    "@aws-sdk/lib-dynamodb": "^3.1075.0",
     "@react-oauth/google": "^0.13.5",
+    "bcrypt": "^6.0.0",
+    "google-auth-library": "^10.9.0",
+    "jsonwebtoken": "^9.0.3",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^1.21.0",
     "react": "^19.2.7",

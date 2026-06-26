@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from "jwt-decode";
 
 export function Auth({ setUser }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google`, {
+      const backendUrl = 'https://zero-hour-api.vercel.app';
+      const res = await fetch(`${backendUrl}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: credentialResponse.credential })
@@ -24,23 +25,24 @@ export function Auth({ setUser }) {
         setUser(data.user);
         navigate('/dashboard');
       } else {
-        console.error('Google Auth Failed on Backend:', data.error);
+        setErrorMessage('Backend Error: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
-      console.error('Failed to communicate with backend', err);
+      setErrorMessage('Network Error: Failed to communicate with backend API. ' + err.message);
     }
   };
 
   const handleGoogleError = () => {
-    console.error('Google Login Failed');
+    setErrorMessage('Google Login Popup Failed. Check if your domain is Authorized in Google Cloud Console.');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const backendUrl = 'https://zero-hour-api.vercel.app';
       
-      const res = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+      const res = await fetch(`${backendUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -55,11 +57,10 @@ export function Auth({ setUser }) {
         setUser(userObj);
         navigate('/dashboard');
       } else {
-        console.error('Auth Error:', data.error);
-        alert(data.error || 'Authentication failed');
+        setErrorMessage(data.error || 'Authentication failed');
       }
     } catch (err) {
-      console.error(err);
+      setErrorMessage('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -70,6 +71,12 @@ export function Auth({ setUser }) {
         <p className="auth-subtitle">
           {isLogin ? 'Sign in to access your assessments.' : 'Register to start your technical evaluation.'}
         </p>
+
+        {errorMessage && (
+          <div style={{ background: 'rgba(255, 50, 50, 0.1)', border: '1px solid #ff3333', color: '#ff3333', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
+            {errorMessage}
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'center', margin: '24px 0' }}>
           <GoogleLogin

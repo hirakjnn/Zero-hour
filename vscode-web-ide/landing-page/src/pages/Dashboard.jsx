@@ -25,7 +25,7 @@ export function Dashboard({ user }) {
 
     setBootStatus("Loading your tools and AI mentor...");
     const sessionId = Math.random().toString(36).substring(2, 15);
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const backendUrl = 'https://dk967f0qqssj5.cloudfront.net';
 
     // 2. Poll the backend until it's awake
     const pollInterval = setInterval(async () => {
@@ -33,10 +33,24 @@ export function Dashboard({ user }) {
         const res = await fetch(`${backendUrl}/health`);
         if (res.ok) {
           clearInterval(pollInterval);
-          setBootStatus("Server ready! Redirecting...");
-          setTimeout(() => {
-            window.location.href = `${backendUrl}/ide/${sessionId}?challenge=${challengeId}`;
-          }, 1000);
+          setBootStatus("Spinning up secure Docker container...");
+          
+          try {
+            const initRes = await fetch(`${backendUrl}/api/session/init`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, challengeId })
+            });
+            if (!initRes.ok) throw new Error("Failed to init session");
+            
+            setBootStatus("Server ready! Redirecting...");
+            setTimeout(() => {
+              window.location.href = `${backendUrl}/ide/${sessionId}?challenge=${challengeId}`;
+            }, 2500);
+          } catch (initErr) {
+            setBootStatus("Error starting container. Try again.");
+            console.error(initErr);
+          }
         }
       } catch (err) {
         // Still booting...

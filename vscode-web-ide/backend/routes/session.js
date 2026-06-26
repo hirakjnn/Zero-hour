@@ -27,15 +27,20 @@ router.post('/init', async (req, res) => {
         console.warn('Session Docker init failed — falling back to local-disk session:', e.message);
         // Return a partial session so the frontend can still load the default workspace
         const fallbackId = req.body.sessionId || require('crypto').randomBytes(16).toString('hex');
+        const fallbackSession = {
+            sessionId: fallbackId,
+            isNew: true,
+            workspaceDir: null, // files.js will use the default workspace
+            port: 32000, // Dummy fallback port
+            containerName: null,
+            lastActive: Date.now()
+        };
+        // Explicitly register the fallback session so the proxy middleware doesn't 404 it
+        sessionManager.sessions.set(fallbackId, fallbackSession);
+        
         res.json({
             success: true,
-            session: {
-                sessionId: fallbackId,
-                isNew: true,
-                workspaceDir: null, // files.js will use the default workspace
-                port: null,
-                containerName: null
-            }
+            session: fallbackSession
         });
     }
 });
