@@ -59,19 +59,7 @@ export function Home() {
           See the <span className="serif-italic">platform</span> in action.
         </h2>
         {/* Mock Video Embed doing heavy lifting */}
-        <div style={{ 
-          width: '100%', 
-          maxWidth: '800px', 
-          height: '450px', 
-          background: '#050505', 
-          margin: '0 auto', 
-          border: '1px solid #1a1a1a', 
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#333'
-        }}>
+        <div className="video-embed">
           [ Product Demo Video ]
         </div>
       </section>

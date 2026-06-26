@@ -14,10 +14,10 @@ function Navbar({ user, setUser }) {
           ZERO HOUR
         </Link>
         <div className="nav-links">
-          <Link to="/platform" className="nav-link">Platform</Link>
-          <Link to="/challenges" className="nav-link">Challenges</Link>
           {user ? (
             <>
+              <Link to="/platform" className="nav-link">Platform</Link>
+              <Link to="/challenges" className="nav-link">Challenges</Link>
               <Link to="/dashboard" className="nav-link">Dashboard</Link>
               <button className="btn btn-outline" onClick={() => {
                 localStorage.removeItem('token');
@@ -26,7 +26,11 @@ function Navbar({ user, setUser }) {
               }}>Sign Out</button>
             </>
           ) : (
-            <Link to="/auth" className="btn btn-primary">Sign In</Link>
+            <>
+              <span className="nav-link" style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Please Sign In">Platform</span>
+              <span className="nav-link" style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Please Sign In">Challenges</span>
+              <Link to="/auth" className="btn btn-primary">Sign In</Link>
+            </>
           )}
         </div>
       </div>
