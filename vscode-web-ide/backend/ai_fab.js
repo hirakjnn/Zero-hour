@@ -5,9 +5,9 @@ function initAiFab() {
 
   const fab = document.createElement("div");
   fab.id = "ai-fab";
-  fab.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 0 10px !important; padding: 5px 14px !important; background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%) !important; color: #ffffff !important; font-family: 'Inter', -apple-system, sans-serif !important; font-size: 13px !important; font-weight: 600 !important; border-radius: 20px !important; cursor: pointer !important; pointer-events: auto !important; position: relative !important; z-index: 2147483647 !important; box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important; transition: all 0.2s ease !important; border: 1px solid rgba(255,255,255,0.2) !important;";
+  fab.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 0 10px !important; padding: 4px 12px !important; background: #007acc !important; color: white !important; font-family: sans-serif !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px !important; cursor: pointer !important; pointer-events: auto !important; position: relative !important; z-index: 2147483647 !important;";
   fab.innerHTML = `
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
     <span>Ask AI</span>
@@ -50,21 +50,17 @@ function initAiFab() {
 
   const mentorContainer = document.createElement("div");
   mentorContainer.id = "ai-mentor-container";
-  // Unique Glassmorphism UI
-  mentorContainer.style.cssText = "display: none !important; flex-direction: column !important; position: fixed !important; top: 50px !important; right: 25px !important; width: 420px !important; height: 550px !important; background: rgba(15, 17, 26, 0.75) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 16px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset !important; z-index: 2147483647 !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif !important; overflow: hidden !important;";
+  mentorContainer.style.cssText = "display: none !important; flex-direction: column !important; position: fixed !important; top: 40px !important; right: 20px !important; width: 400px !important; height: 500px !important; background: #1e1e1e !important; border: 1px solid #333 !important; border-radius: 8px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important; z-index: 2147483647 !important; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif !important;";
 
   mentorContainer.innerHTML = `
-    <div style="background: rgba(0, 0, 0, 0.2); padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; color: #ffffff; font-weight: 600; letter-spacing: 0.5px; font-size: 15px;">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: #00c6ff; box-shadow: 0 0 10px #00c6ff;"></div>
-        ZERO HOUR AI
-      </div>
-      <button id="ai-mentor-close-btn" style="background: none; border: none; color: rgba(255,255,255,0.5); font-size: 22px; cursor: pointer; transition: color 0.2s; padding: 0;">&times;</button>
+    <div style="background: #252526; padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #ddd; font-weight: bold;">
+      Zero Hour AI
+      <button id="ai-mentor-close-btn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">&times;</button>
     </div>
-    <div id="ai-mentor-history" style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; font-size: 14px; scroll-behavior: smooth;">
+    <div id="ai-mentor-history" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px; scroll-behavior: smooth;">
     </div>
-    <div style="padding: 16px 20px; background: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.08);">
-      <input type="text" id="ai-mentor-input" placeholder="Ask your AI Mentor a question..." style="width: 100%; box-sizing: border-box; padding: 12px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #ffffff; border-radius: 12px; outline: none; font-family: inherit; font-size: 14px; transition: all 0.3s ease; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+    <div style="padding: 15px; background: #252526; border-top: 1px solid #333;">
+      <input type="text" id="ai-mentor-input" placeholder="Ask your AI Mentor a question..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: #3c3c3c; border: 1px solid #555; color: #fff; border-radius: 6px; outline: none; font-family: inherit; font-size: 14px;">
     </div>
   `;
 
@@ -101,7 +97,7 @@ function initAiFab() {
 
     if (text) {
       const userDiv = document.createElement("div");
-      userDiv.style.cssText = "background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); padding: 12px 16px; border-radius: 16px; border-bottom-right-radius: 4px; align-self: flex-end; max-width: 85%; color: #ffffff; line-height: 1.5; font-weight: 500; box-shadow: 0 4px 15px rgba(0, 114, 255, 0.2);";
+      userDiv.style.cssText = "background: #007acc; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 85%; color: white; line-height: 1.4;";
       userDiv.textContent = text;
       history.appendChild(userDiv);
       history.scrollTop = history.scrollHeight;
@@ -109,7 +105,7 @@ function initAiFab() {
     }
 
     const aiDiv = document.createElement("div");
-    aiDiv.style.cssText = "background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 14px 18px; border-radius: 16px; border-top-left-radius: 4px; border: 1px solid rgba(0, 198, 255, 0.2); align-self: flex-start; max-width: 90%; color: #f8fafc; line-height: 1.6; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 14.5px;";
+    aiDiv.style.cssText = "background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4; color: #f8fafc;";
     aiDiv.textContent = "...";
     history.appendChild(aiDiv);
     history.scrollTop = history.scrollHeight;
