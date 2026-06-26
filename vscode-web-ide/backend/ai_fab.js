@@ -29,12 +29,16 @@ function initAiFab() {
   const injectTimer = setInterval(() => {
     const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
     if (titleCenter && !document.getElementById('ai-fab')) {
-      // Create Timer Element that persists across reloads using sessionStorage
+      // Create Timer Element that persists across reloads using sessionStorage, scoped to the session ID
       const timerDiv = document.createElement('div');
       timerDiv.id = 'session-timer';
       timerDiv.style.cssText = "color: #ff5555; font-family: monospace; font-size: 14px; margin-right: 15px; display: flex; align-items: center; font-weight: bold;";
       
-      const timerKey = 'zero_hour_session_end';
+      // Extract session ID from the URL (e.g., /ide/1234abc/)
+      const pathParts = window.location.pathname.split('/');
+      const sessionId = (pathParts[1] === 'ide' && pathParts[2]) ? pathParts[2] : 'default';
+      
+      const timerKey = `zero_hour_session_end_${sessionId}`;
       let endTime = sessionStorage.getItem(timerKey);
       if (!endTime) {
         endTime = Date.now() + 3600 * 1000; // 1 hour from now
