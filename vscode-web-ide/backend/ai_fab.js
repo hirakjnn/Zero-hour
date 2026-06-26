@@ -1,137 +1,118 @@
+
+// Injected into code-server to provide the AI FAB
 function initAiFab() {
-  if (document.getElementById('ai-fab')) return; // Prevent double initialization
+  if (document.getElementById("ai-fab")) return; 
 
-  // 1. Hide the annoying 'insecure context' popup
-  setInterval(() => {
-    document.querySelectorAll('.notification-toast').forEach(toast => {
-      if (toast.innerText && toast.innerText.toLowerCase().includes('insecure context')) {
-        toast.style.display = 'none';
-      }
-    });
-  }, 1000);
-
-  // 2. Create the LLM Action Button for the Titlebar
-  const fab = document.createElement('div');
-  fab.id = 'ai-fab';
+  const fab = document.createElement("div");
+  fab.id = "ai-fab";
+  fab.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 0 10px !important; padding: 4px 12px !important; background: #007acc !important; color: white !important; font-family: sans-serif !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px !important; cursor: pointer !important; pointer-events: auto !important; position: relative !important; z-index: 2147483647 !important;";
   fab.innerHTML = `
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
     <span>Ask AI</span>
   `;
+  
+  const timerDiv = document.createElement("div");
+  timerDiv.id = "ai-timer";
+  timerDiv.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; margin: 0 5px !important; padding: 4px 12px !important; background: #333 !important; color: #ffcc00 !important; font-family: monospace !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px !important; border: 1px solid #555 !important; z-index: 2147483647 !important;";
+  
+  const updateTimer = () => {
+    const sessionId = window.location.pathname.split("/ide/")[1]?.replace(/\/$/, "");
+    if (!sessionId) return;
+    const sessionKey = "sessionStartTime_" + sessionId;
+    let startTime = sessionStorage.getItem(sessionKey);
+    if (!startTime) {
+      startTime = Date.now();
+      sessionStorage.setItem(sessionKey, startTime);
+    }
+    const elapsed = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+    const remaining = Math.max(3600 - elapsed, 0);
+    const m = Math.floor(remaining / 60).toString().padStart(2, "0");
+    const s = (remaining % 60).toString().padStart(2, "0");
+    timerDiv.innerText = `${m}:${s}`;
+    if (remaining === 0) {
+      timerDiv.style.color = "#ff4444";
+      timerDiv.innerText = "TIME UP";
+    }
+  };
+  setInterval(updateTimer, 1000);
+  updateTimer();
 
-  // Apply FAB styling directly inline with extreme z-index and explicit positioning
-  fab.style.cssText = "display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 10px !important; height: 24px !important; background: #007acc !important; color: white !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; margin-left: 10px !important; opacity: 0.9 !important; pointer-events: auto !important; position: relative !important; z-index: 2147483647 !important;";
-  fab.onmouseenter = () => fab.style.opacity = '1';
-  fab.onmouseleave = () => fab.style.opacity = '0.9';
-
-  // Inject into Titlebar Center along with a 1-hour Timer
   const injectTimer = setInterval(() => {
-    const titleCenter = document.querySelector('.titlebar-center') || document.querySelector('.part.titlebar');
-    if (titleCenter && !document.getElementById('ai-fab')) {
-      // Create Timer Element that persists across reloads using sessionStorage, scoped to the session ID
-      const timerDiv = document.createElement('div');
-      timerDiv.id = 'session-timer';
-      timerDiv.style.cssText = "color: #ff5555; font-family: monospace; font-size: 14px; margin-right: 15px; display: flex; align-items: center; font-weight: bold;";
-      
-      // Extract session ID from the URL (e.g., /ide/1234abc/)
-      const pathParts = window.location.pathname.split('/');
-      const sessionId = (pathParts[1] === 'ide' && pathParts[2]) ? pathParts[2] : 'default';
-      
-      const timerKey = `zero_hour_session_end_${sessionId}`;
-      let endTime = sessionStorage.getItem(timerKey);
-      if (!endTime) {
-        endTime = Date.now() + 3600 * 1000; // 1 hour from now
-        sessionStorage.setItem(timerKey, endTime);
-      }
-
-      setInterval(() => {
-        const timeLeft = Math.floor((endTime - Date.now()) / 1000);
-        if(timeLeft < 0) {
-          timerDiv.innerText = "00:00";
-          timerDiv.style.color = "red";
-          return;
-        }
-        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-        const s = (timeLeft % 60).toString().padStart(2, '0');
-        timerDiv.innerText = `${m}:${s} left`;
-      }, 1000);
-
+    const titleCenter = document.querySelector(".titlebar-center") || document.querySelector(".part.titlebar");
+    if (titleCenter && !document.getElementById("ai-fab")) {
       titleCenter.appendChild(timerDiv);
       titleCenter.appendChild(fab);
       clearInterval(injectTimer);
     }
   }, 1000);
 
-  // 3. Create the Native DOM Chat UI (No Iframes!)
-  const chatContainer = document.createElement('div');
-  chatContainer.id = 'ai-chat-container';
-  chatContainer.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: none !important; background: #1e1e1e !important; flex-direction: column !important; overflow: hidden !important; color: #ccc !important; font-family: sans-serif !important;";
+  const mentorContainer = document.createElement("div");
+  mentorContainer.id = "ai-mentor-container";
+  mentorContainer.style.cssText = "display: none !important; flex-direction: column !important; position: fixed !important; top: 40px !important; right: 20px !important; width: 400px !important; height: 500px !important; background: #1e1e1e !important; border: 1px solid #333 !important; border-radius: 8px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important; z-index: 2147483647 !important; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif !important;";
 
-  chatContainer.innerHTML = `
+  mentorContainer.innerHTML = `
     <div style="background: #252526; padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #ddd; font-weight: bold;">
       Zero Hour AI
-      <button id="ai-chat-close-btn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">&times;</button>
+      <button id="ai-mentor-close-btn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">&times;</button>
     </div>
-    <div id="ai-chat-history" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+    <div id="ai-mentor-history" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
     </div>
     <div style="padding: 15px; background: #252526; border-top: 1px solid #333;">
-      <input type="text" id="ai-chat-input" placeholder="Ask AI a question..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: #3c3c3c; border: 1px solid #555; color: #fff; border-radius: 6px; outline: none;">
+      <input type="text" id="ai-mentor-input" placeholder="Ask AI a question..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: #3c3c3c; border: 1px solid #555; color: #fff; border-radius: 6px; outline: none;">
     </div>
   `;
 
-  const injectChatTimer = setInterval(() => {
-    const workbench = document.querySelector('.monaco-workbench') || document.body;
-    if (workbench && !document.getElementById('ai-chat-container')) {
-      workbench.appendChild(chatContainer);
-      clearInterval(injectChatTimer);
+  const injectMentorTimer = setInterval(() => {
+    const workbench = document.querySelector(".monaco-workbench") || document.body;
+    if (workbench && !document.getElementById("ai-mentor-container")) {
+      workbench.appendChild(mentorContainer);
+      clearInterval(injectMentorTimer);
       
-      // Bind Chat Logic
-      const input = chatContainer.querySelector('#ai-chat-input');
-      const history = chatContainer.querySelector('#ai-chat-history');
-      let messageHistory = [];
-
-      chatContainer.querySelector('#ai-chat-close-btn').onclick = () => {
-        chatContainer.style.setProperty('display', 'none', 'important');
-        isChatOpen = false;
+      const input = document.getElementById("ai-mentor-input");
+      document.getElementById("ai-mentor-close-btn").onclick = () => {
+        mentorContainer.style.setProperty("display", "none", "important");
+        isMentorOpen = false;
       };
 
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && input.value.trim() !== '') {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && input.value.trim() !== "") {
           triggerAI(input.value.trim());
         }
       });
     }
   }, 1000);
 
-  let isChatOpen = false;
+  let isMentorOpen = false;
   let hasTriggeredInitialAnalysis = false;
+  let messageHistory = [];
 
   const triggerAI = async (text) => {
-    const input = chatContainer.querySelector('#ai-chat-input');
-    const history = chatContainer.querySelector('#ai-chat-history');
+    const input = document.getElementById("ai-mentor-input");
+    const history = document.getElementById("ai-mentor-history");
     
-    input.value = '';
+    input.value = "";
     input.disabled = true;
 
     if (text) {
-      const userDiv = document.createElement('div');
+      const userDiv = document.createElement("div");
       userDiv.style.cssText = "background: #007acc; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 85%; color: white; line-height: 1.4;";
       userDiv.textContent = text;
       history.appendChild(userDiv);
       history.scrollTop = history.scrollHeight;
-      messageHistory.push({ role: 'user', content: text });
+      messageHistory.push({ role: "user", content: text });
     }
 
-    const aiDiv = document.createElement('div');
+    const aiDiv = document.createElement("div");
     aiDiv.style.cssText = "background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4;";
-    aiDiv.textContent = '...';
+    aiDiv.textContent = "...";
     history.appendChild(aiDiv);
     history.scrollTop = history.scrollHeight;
 
     let currentCodeContext = "No file currently focused.";
     try {
-      const editorLines = document.querySelector('.monaco-editor .view-lines');
+      const editorLines = document.querySelector(".monaco-editor .view-lines");
       if (editorLines) {
           currentCodeContext = editorLines.innerText || "Empty file.";
       }
@@ -139,9 +120,9 @@ function initAiFab() {
 
     try {
       const payloadMessage = text || "Please analyze my current code and give me a hint about what I should do next.";
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           message: payloadMessage, 
           history: messageHistory,
@@ -149,22 +130,22 @@ function initAiFab() {
         })
       });
 
-      if (!res.ok) throw new Error('Network error');
+      if (!res.ok) throw new Error("Network error");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      aiDiv.textContent = '';
-      let fullAiResponse = '';
+      aiDiv.textContent = "";
+      let fullAiResponse = "";
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        const lines = chunk.split("\n");
         for (const line of lines) {
-          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+          if (line.startsWith("data: ") && !line.includes("[DONE]")) {
             try {
-              const data = JSON.parse(line.replace('data: ', ''));
+              const data = JSON.parse(line.replace("data: ", ""));
               if (data.text) {
                 aiDiv.textContent += data.text;
                 fullAiResponse += data.text;
@@ -174,45 +155,38 @@ function initAiFab() {
           }
         }
       }
-      messageHistory.push({ role: 'assistant', content: fullAiResponse });
+      messageHistory.push({ role: "assistant", content: fullAiResponse });
     } catch (error) {
-      aiDiv.textContent = 'Connection failed. Ensure the backend is running.';
+      aiDiv.textContent = "Connection failed. Ensure the backend is running.";
     } finally {
       input.disabled = false;
       input.focus();
     }
   };
 
-  const toggleChat = () => {
-    if (!isChatOpen) {
-      chatContainer.style.setProperty('display', 'flex', 'important');
-      isChatOpen = true;
+  const toggleMentor = () => {
+    const mc = document.getElementById("ai-mentor-container");
+    if (!isMentorOpen) {
+      mc.style.setProperty("display", "flex", "important");
+      isMentorOpen = true;
       if (!hasTriggeredInitialAnalysis) {
         hasTriggeredInitialAnalysis = true;
-        triggerAI(""); // Auto trigger analysis!
+        triggerAI(""); 
       }
     } else {
-      chatContainer.style.setProperty('display', 'none', 'important');
-      isChatOpen = false;
+      mc.style.setProperty("display", "none", "important");
+      isMentorOpen = false;
     }
   };
 
-  // The CORE FIX: VS Code's titlebar is a draggable region that uses window-level or 
-  // container-level capture listeners to aggressively swallow events for dragging.
-  // We MUST attach our listener to the very top (window) during the capture phase
-  // so we intercept it BEFORE VS Code's layout engines can stop propagation!
-  window.addEventListener('mousedown', (e) => {
-    const fabTarget = e.target.closest('#ai-fab');
+  window.addEventListener("mousedown", (e) => {
+    const fabTarget = e.target.closest("#ai-fab");
     if (fabTarget) {
       e.preventDefault();
       e.stopPropagation();
-      toggleChat();
+      toggleMentor();
     }
   }, true);
 }
+initAiFab();
 
-if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', initAiFab);
-} else {
-  initAiFab();
-}
