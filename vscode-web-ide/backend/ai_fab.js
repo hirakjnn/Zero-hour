@@ -59,20 +59,102 @@ function initAiFab() {
     }
   }, 1000);
 
-  // 3. Create the Iframe Container for the Chat UI
-  // Using an iframe perfectly isolates our Chat UI from VS Code's aggressive CSS/DOM sandbox
-  const chatIframe = document.createElement('iframe');
-  chatIframe.id = 'ai-chat-iframe';
-  // Use absolute URL to bypass code-server's <base> tag which was causing 404s (the 'dead screen')
-  chatIframe.src = window.location.origin + '/ai-chat';
-  chatIframe.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: none !important; background: #1e1e1e !important;";
+  // 3. Create the Native DOM Chat UI (No Iframes!)
+  const chatContainer = document.createElement('div');
+  chatContainer.id = 'ai-chat-container';
+  chatContainer.style.cssText = "position: absolute !important; top: 40px !important; right: 20px !important; width: 420px !important; height: 550px !important; border: 1px solid #444 !important; border-radius: 8px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.9) !important; z-index: 2147483647 !important; display: none !important; background: #1e1e1e !important; flex-direction: column !important; overflow: hidden !important; color: #ccc !important; font-family: sans-serif !important;";
 
-  // Inject the iframe immediately but hidden
-  const injectIframeTimer = setInterval(() => {
+  chatContainer.innerHTML = `
+    <div style="background: #252526; padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #ddd; font-weight: bold;">
+      Zero Hour AI
+      <button id="ai-chat-close-btn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">&times;</button>
+    </div>
+    <div id="ai-chat-history" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+      <div style="background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4;">
+        Welcome to the War Room. I am your AI Mentor. Describe the problem you are facing, and I will guide you to a solution without writing the code for you.
+      </div>
+    </div>
+    <div style="padding: 15px; background: #252526; border-top: 1px solid #333;">
+      <input type="text" id="ai-chat-input" placeholder="Ask AI a question..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: #3c3c3c; border: 1px solid #555; color: #fff; border-radius: 6px; outline: none;">
+    </div>
+  `;
+
+  const injectChatTimer = setInterval(() => {
     const workbench = document.querySelector('.monaco-workbench') || document.body;
-    if (workbench && !document.getElementById('ai-chat-iframe')) {
-      workbench.appendChild(chatIframe);
-      clearInterval(injectIframeTimer);
+    if (workbench && !document.getElementById('ai-chat-container')) {
+      workbench.appendChild(chatContainer);
+      clearInterval(injectChatTimer);
+      
+      // Bind Chat Logic
+      const input = chatContainer.querySelector('#ai-chat-input');
+      const history = chatContainer.querySelector('#ai-chat-history');
+      let messageHistory = [];
+
+      chatContainer.querySelector('#ai-chat-close-btn').onclick = () => {
+        chatContainer.style.setProperty('display', 'none', 'important');
+        isChatOpen = false;
+      };
+
+      input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter' && input.value.trim() !== '') {
+          const text = input.value.trim();
+          input.value = '';
+          input.disabled = true;
+
+          const userDiv = document.createElement('div');
+          userDiv.style.cssText = "background: #007acc; padding: 10px 14px; border-radius: 8px; align-self: flex-end; max-width: 85%; color: white; line-height: 1.4;";
+          userDiv.textContent = text;
+          history.appendChild(userDiv);
+          history.scrollTop = history.scrollHeight;
+          messageHistory.push({ role: 'user', content: text });
+
+          const aiDiv = document.createElement('div');
+          aiDiv.style.cssText = "background: #2d2d2d; padding: 10px 14px; border-radius: 8px; align-self: flex-start; max-width: 85%; line-height: 1.4;";
+          aiDiv.textContent = '...';
+          history.appendChild(aiDiv);
+          history.scrollTop = history.scrollHeight;
+
+          try {
+            const res = await fetch('/api/ai/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: text, history: messageHistory })
+            });
+
+            if (!res.ok) throw new Error('Network error');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            aiDiv.textContent = '';
+            let fullAiResponse = '';
+
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                  try {
+                    const data = JSON.parse(line.replace('data: ', ''));
+                    if (data.text) {
+                      aiDiv.textContent += data.text;
+                      fullAiResponse += data.text;
+                      history.scrollTop = history.scrollHeight;
+                    }
+                  } catch(err) {}
+                }
+              }
+            }
+            messageHistory.push({ role: 'assistant', content: fullAiResponse });
+          } catch (error) {
+            aiDiv.textContent = 'Connection failed. Ensure the backend is running.';
+          } finally {
+            input.disabled = false;
+            input.focus();
+          }
+        }
+      });
     }
   }, 1000);
 
@@ -83,15 +165,10 @@ function initAiFab() {
     e.stopPropagation();
 
     if (!isChatOpen) {
-      // Force append to the main workbench container to guarantee visibility
-      const workbench = document.querySelector('.monaco-workbench') || document.body;
-      if (chatIframe.parentNode !== workbench) {
-        workbench.appendChild(chatIframe);
-      }
-      chatIframe.style.setProperty('display', 'block', 'important');
+      chatContainer.style.setProperty('display', 'flex', 'important');
       isChatOpen = true;
     } else {
-      chatIframe.style.setProperty('display', 'none', 'important');
+      chatContainer.style.setProperty('display', 'none', 'important');
       isChatOpen = false;
     }
   };
@@ -99,14 +176,6 @@ function initAiFab() {
   // VS Code's titlebar is a draggable region that aggressively swallows 'click' events.
   // We MUST use 'mousedown' with { capture: true } to intercept it before VS Code stops propagation!
   fab.addEventListener('mousedown', toggleChat, true);
-
-  // Allow the iframe to close itself if it wants to communicate via postMessage
-  window.addEventListener('message', (event) => {
-    if (event.data === 'close-ai-chat') {
-      chatIframe.style.setProperty('display', 'none', 'important');
-      isChatOpen = false;
-    }
-  });;
 }
 
 if (document.readyState === 'loading') {

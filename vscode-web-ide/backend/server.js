@@ -285,10 +285,6 @@ app.use((req, res, next) => {
             // Touch session to keep it alive
             sessionManager.touchSession(sessionId);
 
-            // NUCLEAR CACHE BUSTING: Force the browser to violently delete its IndexedDB and LocalStorage.
-            // This guarantees any zombie extensions (like Copilot Chat) cached by the Service Worker are permanently destroyed.
-            res.setHeader('Clear-Site-Data', '"cache", "storage", "executionContexts"');
-
             // ENFORCE TRAILING SLASH (CRITICAL FOR CODE-SERVER SUBPATH ROUTING)
             // If the URL is exactly /ide/123, code-server returns "Not found."
             // It strictly requires /ide/123/
