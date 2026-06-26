@@ -118,11 +118,24 @@ function initAiFab() {
           history.appendChild(aiDiv);
           history.scrollTop = history.scrollHeight;
 
+          // Attempt to extract live context from the VS Code editor DOM
+          let currentCodeContext = "No file currently focused.";
+          try {
+            const editorLines = document.querySelector('.monaco-editor .view-lines');
+            if (editorLines) {
+               currentCodeContext = editorLines.innerText || "Empty file.";
+            }
+          } catch(err) {}
+
           try {
             const res = await fetch('/api/ai/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ message: text, history: messageHistory })
+              body: JSON.stringify({ 
+                message: text, 
+                history: messageHistory,
+                code: currentCodeContext // Inject live context so the AI "knows what the user is doing"
+              })
             });
 
             if (!res.ok) throw new Error('Network error');
