@@ -141,22 +141,19 @@ router.post('/chat', async (req, res) => {
 
         // Handle specific AWS auth/config errors gracefully
         let errorMsg = 'An error occurred while connecting to the AI Mentor.';
-            if (error.name === 'CredentialsProviderError') {
-                // FALLBACK MOCK MENTOR: If the user hasn't configured AWS credentials, 
-                // we gracefully mock the AI stream so the UI still perfectly works.
-                const mockResponse = `*System Note: AWS Bedrock credentials not found. Switching to offline mock mentor...*\n\nI am analyzing your live context. I see you are currently focusing on the following code:\n\`\`\`\n${code ? code.substring(0, 150) + '...' : 'No file open'}\n\`\`\`\nTo solve your query, look closely at how you are extracting variables from your JSON payload.`;
-                
-                // Stream the mock response chunk by chunk to simulate real AI typing
-                const chunks = mockResponse.split(' ');
-                for (let chunk of chunks) {
-                    res.write(`data: ${JSON.stringify({ text: chunk + ' ' })}\n\n`);
-                    await new Promise(r => setTimeout(r, 50));
-                }
-                res.write(`data: [DONE]\n\n`);
-                return res.end();
+        if (error.name === 'CredentialsProviderError') {
+            // FALLBACK MOCK MENTOR: If the user hasn't configured AWS credentials, 
+            // we gracefully mock the AI stream so the UI still perfectly works.
+            const mockResponse = `*System Note: AWS Bedrock credentials not found. Switching to offline mock mentor...*\n\nI am analyzing your live context. I see you are currently focusing on the following code:\n\`\`\`\n${code ? code.substring(0, 150) + '...' : 'No file open'}\n\`\`\`\nTo solve your query, look closely at how you are extracting variables from your JSON payload.`;
+            
+            // Stream the mock response chunk by chunk to simulate real AI typing
+            const chunks = mockResponse.split(' ');
+            for (let chunk of chunks) {
+                res.write(`data: ${JSON.stringify({ text: chunk + ' ' })}\n\n`);
+                await new Promise(r => setTimeout(r, 50));
             }
-
-            errorMsg = "AWS Credentials missing. Ensure the EC2 instance has an IAM role that allows Bedrock access.";
+            res.write(`data: [DONE]\n\n`);
+            return res.end();
         } else if (error.name === 'ValidationException' || error.message.includes('modelId')) {
             errorMsg = "AWS Bedrock Model access error. Make sure Claude 3.5 Sonnet is enabled in your AWS Bedrock console.";
         }
