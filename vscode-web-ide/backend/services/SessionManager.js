@@ -183,6 +183,14 @@ class SessionManager {
 
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
 
+      // Inject the UI modifications (CSP bypass + custom scripts)
+      setTimeout(() => {
+        exec(`node ${path.join(__dirname, '../inject_guider.js')} ${containerName}`, (err, stdout, stderr) => {
+          if (err) console.error("[SessionManager] Failed to inject guider UI:", err);
+          else console.log(`[SessionManager] Injected guider UI into ${containerName}`);
+        });
+      }, 3000);
+
       return { isNew: true, ...sessionData };
     } catch (e) {
       console.error(`[SessionManager] Failed to create container for ${sessionId}:`, e);

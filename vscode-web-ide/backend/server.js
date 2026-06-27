@@ -357,23 +357,4 @@ server.listen(PORT, () => {
     console.log(`   Workspace: ${process.env.WORKSPACE_DIR || path.join(__dirname, 'workspace')}`);
 });
 
-// Scale-to-Zero heartbeat
-let zeroSessionsTime = 0;
-setInterval(() => {
-    const activeSessionsCount = sessionManager.sessions.size;
-    if (activeSessionsCount === 0) {
-        zeroSessionsTime += 1;
-        console.log(`[Scale-to-Zero] 0 active sessions for ${zeroSessionsTime} minute(s).`);
-        if (zeroSessionsTime >= 15) {
-            console.log('[Scale-to-Zero] 15 minutes of inactivity reached. Shutting down...');
-            const { exec } = require('child_process');
-            exec('sudo shutdown -h now', (err, stdout, stderr) => {
-                if (err) {
-                    console.error('[Scale-to-Zero] Failed to execute shutdown:', err);
-                }
-            });
-        }
-    } else {
-        zeroSessionsTime = 0;
-    }
-}, 60 * 1000);
+
