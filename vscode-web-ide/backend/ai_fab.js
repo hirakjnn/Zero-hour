@@ -39,7 +39,7 @@ function initAiFab() {
         });
         
         if (res.ok) {
-            window.top.location.href = \`https://zero-hour-ai.vercel.app/results?sessionId=\${sessionId}\`;
+            window.top.location.href = `https://zero-hour-ai.vercel.app/results?sessionId=${sessionId}`;
         } else {
             alert("Submission failed. Please try again.");
             submitBtn.innerHTML = "<span>Submit</span>";
