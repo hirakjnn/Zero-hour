@@ -183,9 +183,12 @@ class SessionManager {
 
       console.log(`[SessionManager] Created session ${sessionId} (Port: ${port})`);
 
-      // Inject the UI modifications (CSP bypass + custom scripts)
+      // Inject the UI modifications (CSP bypass + custom scripts) inside the container
       setTimeout(() => {
-        exec(`node ${path.join(__dirname, '../inject_guider.js')} ${containerName}`, (err, stdout, stderr) => {
+        const injectScript = path.join(__dirname, '../inject_guider.js');
+        const aiFabScript = path.join(__dirname, '../ai_fab.js');
+        
+        exec(`docker cp ${injectScript} ${containerName}:/tmp/inject_guider.js && docker cp ${aiFabScript} ${containerName}:/tmp/ai_fab.js && docker exec --user root ${containerName} node /tmp/inject_guider.js`, (err, stdout, stderr) => {
           if (err) console.error("[SessionManager] Failed to inject guider UI:", err);
           else console.log(`[SessionManager] Injected guider UI into ${containerName}`);
         });
