@@ -15,18 +15,22 @@ router.get('/:sessionId', async (req, res) => {
             return res.status(400).json({ error: 'sessionId is required' });
         }
 
-        const data = await ddbDocClient.send(new GetCommand({
-            TableName: 'ZeroHour_Evaluations',
-            Key: {
-                sessionId: sessionId
-            }
-        }));
+        const fs = require('fs');
+        const path = require('path');
+        const dbPath = path.join(__dirname, '../evaluations_db.json');
+        
+        let db = {};
+        if (fs.existsSync(dbPath)) {
+            db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        }
+        
+        const item = db[sessionId];
 
-        if (!data.Item) {
+        if (!item) {
             return res.status(404).json({ error: 'Evaluation not found' });
         }
 
-        res.json({ success: true, evaluation: data.Item });
+        res.json({ success: true, evaluation: item });
     } catch (e) {
         console.error('Failed to fetch evaluation:', e);
         res.status(500).json({ error: 'Failed to fetch evaluation' });

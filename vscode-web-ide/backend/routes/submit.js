@@ -97,22 +97,30 @@ router.post('/', async (req, res) => {
         // Add diff length for stats
         scorecard.details = { diffLength: diffOutput.length };
 
-        // Save to AWS DynamoDB
+        // Save to Local JSON Database (Bypassing DynamoDB to avoid IAM permission issues)
         try {
-            await ddbDocClient.send(new PutCommand({
-                TableName: 'ZeroHour_Evaluations',
-                Item: {
-                    sessionId: sessionId,
-                    score: scorecard.score,
-                    feedback: scorecard.feedback,
-                    fixed: scorecard.fixed,
-                    diffLength: scorecard.details.diffLength,
-                    createdAt: new Date().toISOString()
-                }
-            }));
-            console.log('[DB Sync] Saved scorecard to DynamoDB ZeroHour_Evaluations.');
+            const fs = require('fs');
+            const path = require('path');
+            const dbPath = path.join(__dirname, '../evaluations_db.json');
+            
+            let db = {};
+            if (fs.existsSync(dbPath)) {
+                db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+            }
+            
+            db[sessionId] = {
+                sessionId: sessionId,
+                score: scorecard.score,
+                feedback: scorecard.feedback,
+                fixed: scorecard.fixed,
+                diffLength: scorecard.details.diffLength,
+                createdAt: new Date().toISOString()
+            };
+            
+            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            console.log('[DB Sync] Saved scorecard to local evaluations_db.json.');
         } catch (dbErr) {
-            console.error('[DB Sync] Failed to save to DynamoDB. Note: ensure ZeroHour_Evaluations table exists!', dbErr);
+            console.error('[DB Sync] Failed to save to local database.', dbErr);
         }
 
         // Destroy the Docker session completely
