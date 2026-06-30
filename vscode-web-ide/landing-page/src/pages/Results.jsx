@@ -52,93 +52,87 @@ export function Results({ user }) {
         </div>
       </nav>
 
-      <div className="container" style={{ maxWidth: '800px' }}>
+      <div className="container" style={{ maxWidth: '900px', padding: '40px 24px' }}>
         
         <button 
           className="btn btn-outline" 
-          style={{ marginBottom: '30px', padding: '8px 16px' }}
+          style={{ marginBottom: '40px', padding: '10px 20px', borderRadius: '8px' }}
           onClick={() => navigate('/dashboard')}
         >
           <ArrowLeft size={16} /> Back to Dashboard
         </button>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <Loader2 className="spinner" size={48} color="var(--primary-color)" style={{ margin: '0 auto 20px' }} />
-            <h2 style={{ margin: '0 0 10px' }}>Analyzing Your Code</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Our AI Mentor is evaluating your submission...</p>
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '80px 20px' }}>
+            <Loader2 className="spinner" size={48} color="#0072ff" style={{ margin: '0 auto 24px' }} />
+            <h2 className="hero-title" style={{ fontSize: '32px', marginBottom: '12px' }}>Analyzing Your Code</h2>
+            <p className="hero-subtitle" style={{ margin: 0 }}>Our AI Mentor is evaluating your submission...</p>
           </div>
         ) : error ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid #ff4444' }}>
-            <XCircle size={48} color="#ff4444" style={{ margin: '0 auto 20px' }} />
-            <h2 style={{ margin: '0 0 10px', color: '#ff4444' }}>Evaluation Failed</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>{error}</p>
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '80px 20px', borderColor: 'rgba(255, 68, 68, 0.3)' }}>
+            <XCircle size={64} color="#ff4444" style={{ margin: '0 auto 24px', filter: 'drop-shadow(0 0 20px rgba(255, 68, 68, 0.4))' }} />
+            <h2 className="hero-title" style={{ fontSize: '32px', marginBottom: '12px', color: '#ff4444' }}>Evaluation Failed</h2>
+            <p className="hero-subtitle" style={{ margin: 0 }}>{error}</p>
           </div>
         ) : scorecard ? (
-          <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+          <div className="premium-results-wrapper">
             
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(0, 122, 204, 0.1) 0%, rgba(0, 0, 0, 0) 100%)',
-              border: '1px solid var(--border-color)',
-              borderTop: '4px solid var(--primary-color)',
-              borderRadius: '12px',
-              padding: '40px',
-              textAlign: 'center',
-              marginBottom: '30px'
-            }}>
-              <h1 style={{ fontSize: '32px', margin: '0 0 10px' }}>Assessment Complete</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '16px', marginBottom: '30px' }}>
-                Your code has been evaluated by the AI Mentor.
-              </p>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              <span className="eyebrow" style={{ color: '#0072ff' }}>Assessment Complete</span>
+              <h1 className="hero-title" style={{ fontSize: '48px', margin: '16px 0 0' }}>
+                Your Final <span className="serif-italic">Scorecard</span>
+              </h1>
+            </div>
+
+            <div className="glass-panel">
               
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+              <div className="score-display-wrapper">
                 
-                <div style={{ background: 'var(--bg-primary)', padding: '20px 30px', borderRadius: '12px', border: '1px solid var(--border-color)', minWidth: '150px' }}>
-                  <Star size={24} color="#ffd700" style={{ marginBottom: '10px' }} />
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff' }}>{scorecard.score}<span style={{ fontSize: '20px', color: 'var(--text-secondary)' }}>/100</span></div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '5px', textTransform: 'uppercase', letterSpacing: '1px' }}>Score</div>
+                <div className="metric-card neon-blue">
+                  <Star size={32} color="#0072ff" />
+                  <div className="metric-value" style={{ color: '#0072ff' }}>
+                    {scorecard.score}<span style={{ fontSize: '24px', opacity: 0.5 }}>/100</span>
+                  </div>
+                  <div className="metric-label">AI Evaluated Score</div>
                 </div>
 
-                <div style={{ background: 'var(--bg-primary)', padding: '20px 30px', borderRadius: '12px', border: '1px solid var(--border-color)', minWidth: '150px' }}>
+                <div className={`metric-card ${scorecard.fixed ? 'neon-green' : 'neon-red'}`}>
                   {scorecard.fixed ? (
-                    <CheckCircle size={24} color="#4caf50" style={{ marginBottom: '10px' }} />
+                    <CheckCircle size={32} color="#4caf50" />
                   ) : (
-                    <XCircle size={24} color="#ff4444" style={{ marginBottom: '10px' }} />
+                    <XCircle size={32} color="#ff4444" />
                   )}
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: scorecard.fixed ? '#4caf50' : '#ff4444', marginTop: '10px' }}>
+                  <div className="metric-value" style={{ color: scorecard.fixed ? '#4caf50' : '#ff4444' }}>
                     {scorecard.fixed ? 'SOLVED' : 'FAILED'}
                   </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '5px', textTransform: 'uppercase', letterSpacing: '1px' }}>Status</div>
+                  <div className="metric-label">Resolution Status</div>
                 </div>
 
               </div>
-            </div>
 
-            <h2 style={{ fontSize: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Target size={20} color="var(--primary-color)" /> AI Feedback
-            </h2>
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px', marginBottom: '30px', lineHeight: '1.6', fontSize: '16px', color: '#eee' }}>
-              {scorecard.feedback}
-            </div>
+              <div className="feedback-section">
+                <h2><Target size={24} color="#0072ff" /> Mentor Feedback</h2>
+                <div className="feedback-content">
+                  {scorecard.feedback}
+                </div>
+              </div>
 
-            <h2 style={{ fontSize: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Code size={20} color="var(--primary-color)" /> Technical Details
-            </h2>
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>Session ID</div>
-                <div style={{ fontFamily: 'monospace', color: '#ccc' }}>{scorecard.sessionId}</div>
+              <div className="technical-details">
+                <div className="tech-detail-item">
+                  <div className="label">Session ID</div>
+                  <div className="value">{scorecard.sessionId}</div>
+                </div>
+                <div className="tech-detail-item">
+                  <div className="label">Date Submitted</div>
+                  <div className="value">{new Date(scorecard.createdAt).toLocaleString()}</div>
+                </div>
+                <div className="tech-detail-item">
+                  <div className="label">Lines Changed</div>
+                  <div className="value">{scorecard.diffLength} bytes</div>
+                </div>
               </div>
-              <div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>Date Submitted</div>
-                <div style={{ color: '#ccc' }}>{new Date(scorecard.createdAt).toLocaleString()}</div>
-              </div>
-              <div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>Lines Changed (Diff)</div>
-                <div style={{ color: '#ccc' }}>{scorecard.diffLength} bytes</div>
-              </div>
-            </div>
 
+            </div>
           </div>
         ) : null}
 
