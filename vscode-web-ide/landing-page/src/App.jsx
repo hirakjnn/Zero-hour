@@ -38,6 +38,7 @@ function Navbar({ user, setUser }) {
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -50,7 +51,12 @@ function App() {
         setUser({ email: 'user@example.com', name: 'User' });
       }
     }
+    setAuthLoaded(true);
   }, []);
+
+  if (!authLoaded) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', color: '#fff' }}>Loading...</div>;
+  }
 
   return (
     <BrowserRouter>
