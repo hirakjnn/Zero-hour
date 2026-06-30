@@ -49,15 +49,9 @@ export function Results({ user }) {
 
   return (
     <>
-      <nav className="navbar">
-        <div className="nav-brand">Zero Hour</div>
-        <div className="nav-user">
-          <img src={user.picture} alt="Profile" className="nav-avatar" />
-        </div>
-      </nav>
-
       <div className="container" style={{ maxWidth: '900px', padding: '40px 24px' }}>
         
+
         <button 
           className="btn btn-outline" 
           style={{ marginBottom: '40px', padding: '10px 20px', borderRadius: '8px' }}
