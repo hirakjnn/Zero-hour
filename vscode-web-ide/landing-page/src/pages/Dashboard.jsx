@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Play, FileText, CheckCircle, Loader2 } from 'lucide-react';
 
 export function Dashboard({ user }) {
@@ -7,14 +7,15 @@ export function Dashboard({ user }) {
     return <Navigate to="/auth" />;
   }
 
+  const navigate = useNavigate();
   const [isBooting, setIsBooting] = useState(false);
   const [bootStatus, setBootStatus] = useState("Waking up the server...");
+  const [recentSessionId, setRecentSessionId] = useState(localStorage.getItem('recentSessionId') || 'xm8f6emcj77');
 
   const startAssessment = async (challengeId) => {
     setIsBooting(true);
     setBootStatus("Provisioning your dedicated workspace...");
 
-    // 1. Ping the Lambda function to wake up the EC2 server
     try {
       if (import.meta.env.VITE_LAMBDA_URL) {
         await fetch(import.meta.env.VITE_LAMBDA_URL, { method: 'POST' });
@@ -27,7 +28,6 @@ export function Dashboard({ user }) {
     const sessionId = Math.random().toString(36).substring(2, 15);
     const backendUrl = 'https://dk967f0qqssj5.cloudfront.net';
 
-    // 2. Poll the backend until it's awake
     const pollInterval = setInterval(async () => {
       try {
         const res = await fetch(`${backendUrl}/health`);
@@ -42,6 +42,10 @@ export function Dashboard({ user }) {
               body: JSON.stringify({ sessionId, challengeId })
             });
             if (!initRes.ok) throw new Error("Failed to init session");
+            
+            // Save to localStorage so they can view it later
+            localStorage.setItem('recentSessionId', sessionId);
+            setRecentSessionId(sessionId);
             
             setBootStatus("Server ready! Redirecting...");
             setTimeout(() => {
@@ -117,12 +121,12 @@ export function Dashboard({ user }) {
           <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
               <CheckCircle size={18} color="#4caf50" />
-              <strong style={{ fontSize: '15px' }}>Snap Haul CLI</strong>
+              <strong style={{ fontSize: '15px' }}>Latest Session</strong>
             </div>
             <p style={{ margin: '0 0 16px 0', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-              Completed in 42 minutes. AI Mentor noted strong architectural decisions but suggested better error handling.
+              View the AI evaluation scorecard for your most recent technical assessment.
             </p>
-            <button className="btn btn-outline" style={{ width: '100%', padding: '8px' }}>
+            <button className="btn btn-outline" style={{ width: '100%', padding: '8px' }} onClick={() => navigate(`/results?sessionId=${recentSessionId}`)}>
               <FileText size={14} /> View Scorecard
             </button>
           </div>
