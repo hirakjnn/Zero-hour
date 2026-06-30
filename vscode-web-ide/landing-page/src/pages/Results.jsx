@@ -3,6 +3,10 @@ import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, ArrowLeft, Loader2, Code, Star, Target, FileText } from 'lucide-react';
 
 export function Results({ user }) {
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('sessionId');
   const navigate = useNavigate();

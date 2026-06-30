@@ -41,17 +41,24 @@ function App() {
   const [authLoaded, setAuthLoaded] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        // Fallback if token exists but no user object
-        setUser({ email: 'user@example.com', name: 'User' });
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          setUser({ email: 'user@example.com', name: 'User' });
+        }
       }
+    } catch (err) {
+      console.error("Failed to parse user from localStorage:", err);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    } finally {
+      setAuthLoaded(true);
     }
-    setAuthLoaded(true);
   }, []);
 
   if (!authLoaded) {
